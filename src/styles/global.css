@@ -6,7 +6,7 @@
   --surface: #f7f8fa;
   --fg: #14161a;
   --muted: #5b6472;
-  --faint: #8b95a3;
+  --faint: #69727e;
   --border: #e5e8ec;
   --accent: #0f766e;
   --accent-soft: #e6f4f1;
@@ -26,7 +26,7 @@
     --surface: #13161b;
     --fg: #e8eaed;
     --muted: #9aa3b2;
-    --faint: #6b7480;
+    --faint: #8b95a3;
     --border: #23272e;
     --accent: #2dd4bf;
     --accent-soft: #0e2825;
@@ -205,8 +205,21 @@ a.pill:hover {
   font-family: var(--font-mono);
   font-size: 0.78rem;
 }
-.pill-static {
-  cursor: default;
+.pill-copy {
+  font-family: var(--font-sans);
+  color: var(--fg);
+  background: var(--bg);
+  cursor: pointer;
+}
+.pill-copy:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.pill-action {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--accent);
 }
 
 /* ---------- sections ---------- */
@@ -236,6 +249,26 @@ a.pill:hover {
 }
 .prose p:last-child {
   margin-bottom: 0;
+}
+.planned {
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.planned li {
+  position: relative;
+  padding-inline-start: 1.1rem;
+}
+.planned li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.9em;
+  width: 0.5rem;
+  height: 1px;
+  background: var(--faint);
 }
 
 /* ---------- empty state ---------- */
@@ -346,6 +379,17 @@ a.pill:hover {
 }
 
 /* ---------- a11y ---------- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;

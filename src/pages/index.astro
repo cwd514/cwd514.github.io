@@ -5,8 +5,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 const links = [
   { label: 'GitHub', handle: '@cwd514', href: 'https://github.com/cwd514' },
   { label: 'X', handle: '@sui_egamer', href: 'https://x.com/sui_egamer' },
-  { label: 'Discord', handle: 'su_ra_i_meu', href: null },
 ] as const;
+
+const discord = 'su_ra_i_meu';
 
 const notes = (await getCollection('notes', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
@@ -30,25 +31,29 @@ const dateFmt = new Intl.DateTimeFormat('ja-JP', {
     </p>
     <ul class="links">
       {
-        links.map((l) =>
-          l.href ? (
-            <li>
-              <a class="pill" href={l.href} target="_blank" rel="me noopener noreferrer">
-                <span class="pill-label">{l.label}</span>
-                <span class="pill-handle">{l.handle}</span>
-              </a>
-            </li>
-          ) : (
-            <li>
-              <span class="pill pill-static">
-                <span class="pill-label">{l.label}</span>
-                <span class="pill-handle">{l.handle}</span>
-              </span>
-            </li>
-          )
-        )
+        links.map((l) => (
+          <li>
+            <a class="pill" href={l.href} target="_blank" rel="me noopener noreferrer">
+              <span class="pill-label">{l.label}</span>
+              <span class="pill-handle">{l.handle}</span>
+            </a>
+          </li>
+        ))
       }
+      <li>
+        <button
+          type="button"
+          class="pill pill-copy"
+          data-copy={discord}
+          aria-label={`Discord のユーザー名 ${discord} をコピー`}
+        >
+          <span class="pill-label">Discord</span>
+          <span class="pill-handle">{discord}</span>
+          <span class="pill-action" aria-hidden="true">コピー</span>
+        </button>
+      </li>
     </ul>
+    <p class="sr-only" role="status" data-copy-status></p>
   </section>
 
   <section id="about" class="wrap">
@@ -95,4 +100,60 @@ const dateFmt = new Intl.DateTimeFormat('ja-JP', {
       )
     }
   </section>
+
+  <section id="next" class="wrap">
+    <h2 class="section-title">Next</h2>
+    <div class="prose">
+      <p>これから、次のようなテーマを、実際に試した順にまとめていく予定です。</p>
+      <ul class="planned">
+        <li>手元で動かしたモデルと、その環境の記録</li>
+        <li>量子化や設定を変えたときの挙動の違い</li>
+        <li>推論速度・メモリ使用量の実測</li>
+        <li>詰まった点と、その対処</li>
+      </ul>
+    </div>
+  </section>
+
+  <script>
+    const copyButtons = document.querySelectorAll<HTMLButtonElement>('[data-copy]');
+    const status = document.querySelector<HTMLElement>('[data-copy-status]');
+    let resetTimer: number | undefined;
+
+    async function copyText(text: string): Promise<boolean> {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch {
+        // Clipboard API can reject (permissions, insecure context); fall back below.
+      }
+      const field = document.createElement('textarea');
+      field.value = text;
+      field.setAttribute('readonly', '');
+      field.style.position = 'fixed';
+      field.style.top = '-9999px';
+      document.body.appendChild(field);
+      field.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(field);
+      return ok;
+    }
+
+    copyButtons.forEach((button) => {
+      const action = button.querySelector<HTMLElement>('.pill-action');
+      const text = button.dataset.copy ?? '';
+      button.addEventListener('click', async () => {
+        const ok = await copyText(text);
+        if (!ok || !action) return;
+        action.textContent = 'コピーしました';
+        if (status) status.textContent = `Discord のユーザー名 ${text} をコピーしました`;
+        window.clearTimeout(resetTimer);
+        resetTimer = window.setTimeout(() => {
+          action.textContent = 'コピー';
+          if (status) status.textContent = '';
+        }, 2000);
+      });
+    });
+  </script>
 </BaseLayout>

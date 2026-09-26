@@ -6,7 +6,7 @@ colors:
   surface: "#f7f8fa"
   ink: "#14161a"
   ink-muted: "#5b6472"
-  ink-faint: "#8b95a3"
+  ink-faint: "#69727e"
   hairline: "#e5e8ec"
   accent-teal: "#0f766e"
   accent-wash: "#e6f4f1"
@@ -52,8 +52,8 @@ components:
     textColor: "{colors.ink}"
     rounded: "{rounded.pill}"
     padding: "0.5rem 0.9rem"
-  pill-static:
-    backgroundColor: "{colors.surface}"
+  pill-copy:
+    backgroundColor: "{colors.page}"
     textColor: "{colors.ink}"
     rounded: "{rounded.pill}"
     padding: "0.5rem 0.9rem"
@@ -109,7 +109,7 @@ components:
 - **Mist Surface** (#f7f8fa): カード・ピル・空状態の面。ページから一段だけ沈んだ、静かな面。
 - **Ink** (#14161a): 本文と見出しの基本色。
 - **Muted Ink** (#5b6472): タグライン、リード文、ナビの通常状態、補助的な説明。
-- **Faint Ink** (#8b95a3): セクション見出し、日付、フッターなどの三次メタ情報。
+- **Faint Ink** (#69727e): セクション見出し、日付、フッターなどの三次メタ情報。白背景・Mist Surface 上ともに 4.5:1 以上を保つ。
 - **Hairline** (#e5e8ec): すべての 1px 罫線・区切り線。
 - **Accent Wash** (#e6f4f1): ステータスバッジ専用の淡いティール面。
 
@@ -165,7 +165,7 @@ components:
 - **Shape:** 完全な丸（999px）＋ 1px ヘアライン。
 - **Primary:** Mist Surface の塗り、Ink の文字、太字の名前とモノスペースのハンドルの二部構成、padding 0.5rem 0.9rem。
 - **Hover / Focus:** 罫線がティールに変わり、1px だけ持ち上がる（translateY(-1px)、0.15s ease）。フォーカスはアクセントのアウトライン。
-- **Static:** 同じ外殻でホバー反応なし・既定カーソル。Discord のような「リンクではない」項目に使う。
+- **Copy:** URL を持たない連絡先（Discord など）に使う。リンクのピルと同じ外郭だが、塗りはページ色で、モノスペースのハンドルと「コピー」のアクションラベルを併記した `<button>`。押すとハンドルをクリップボードへコピーし、ラベルが一時的に「コピーしました」へ変わり、スクリーンリーダーには `role="status"` で通知する。
 
 ### Cards / Containers
 - **Corner Style:** ノートカード 10px、空状態 14px。

@@ -35,8 +35,8 @@
       "ink-faint": {
         "role": "neutral",
         "displayName": "Faint Ink",
-        "canonical": "#8b95a3",
-        "darkCanonical": "#6b7480",
+        "canonical": "#69727e",
+        "darkCanonical": "#8b95a3",
         "tonalRamp": ["oklch(24% 0.012 265)", "oklch(36% 0.013 265)", "oklch(48% 0.014 265)", "oklch(60% 0.014 265)", "oklch(72% 0.012 265)", "oklch(82% 0.010 265)", "oklch(90% 0.007 265)", "oklch(96% 0.004 265)"]
       },
       "hairline": {
@@ -90,12 +90,12 @@
       "css": ".ds-pill { display:inline-flex; align-items:baseline; gap:0.5rem; padding:0.5rem 0.9rem; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--fg); text-decoration:none; font-family:var(--font-sans); font-size:0.9rem; transition:border-color 0.15s ease, transform 0.15s ease; } .ds-pill:hover { border-color:var(--accent); transform:translateY(-1px); } .ds-pill:focus-visible { outline:2px solid var(--accent); outline-offset:3px; } .ds-pill__label { font-weight:600; } .ds-pill__handle { color:var(--muted); font-family:var(--font-mono); font-size:0.78rem; }"
     },
     {
-      "name": "Static Pill",
-      "kind": "chip",
-      "refersTo": "pill-static",
-      "description": "リンクではない項目（Discord など）。同じ外殻を持つがホバー反応もカーソル変化もない。",
-      "html": "<span class=\"ds-pill ds-pill--static\"><span class=\"ds-pill__label\">Discord</span><span class=\"ds-pill__handle\">su_ra_i_meu</span></span>",
-      "css": ".ds-pill--static { display:inline-flex; align-items:baseline; gap:0.5rem; padding:0.5rem 0.9rem; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--fg); font-family:var(--font-sans); font-size:0.9rem; cursor:default; } .ds-pill--static .ds-pill__label { font-weight:600; } .ds-pill--static .ds-pill__handle { color:var(--muted); font-family:var(--font-mono); font-size:0.78rem; }"
+      "name": "Copy Control",
+      "kind": "button",
+      "refersTo": "pill-copy",
+      "description": "URL を持たない連絡先（Discord など）。リンクのピルと同じ外郭を保つが、塗りはページ色で、モノスペースのハンドルと「コピー」のアクションラベルを併記した <button>。押すとハンドルをクリップボードへコピーし、ラベルが一時的に「コピーしました」へ変わり、スクリーンリーダーへは role=status で通知する。",
+      "html": "<button type=\"button\" class=\"ds-pill ds-pill--copy\"><span class=\"ds-pill__label\">Discord</span><span class=\"ds-pill__handle\">su_ra_i_meu</span><span class=\"ds-pill__action\">コピー</span></button>",
+      "css": ".ds-pill--copy { display:inline-flex; align-items:baseline; gap:0.5rem; padding:0.5rem 0.9rem; border:1px solid var(--border); border-radius:999px; background:var(--bg); color:var(--fg); font-family:var(--font-sans); font-size:0.9rem; cursor:pointer; transition:border-color 0.15s ease, transform 0.15s ease; } .ds-pill--copy:hover { border-color:var(--accent); transform:translateY(-1px); } .ds-pill--copy:focus-visible { outline:2px solid var(--accent); outline-offset:3px; } .ds-pill__action { color:var(--accent); font-family:var(--font-mono); font-size:0.75rem; letter-spacing:0.04em; }"
     },
     {
       "name": "Note Card",
