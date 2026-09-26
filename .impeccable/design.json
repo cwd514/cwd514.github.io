@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-26T12:00:00+09:00",
+  "title": "Design System: すい — 個人ページ",
+  "extensions": {
+    "colorMeta": {
+      "page": {
+        "role": "neutral",
+        "displayName": "Page White",
+        "canonical": "#ffffff",
+        "darkCanonical": "#0b0d10",
+        "tonalRamp": ["oklch(15% 0.008 260)", "oklch(25% 0.008 260)", "oklch(38% 0.007 260)", "oklch(52% 0.006 260)", "oklch(66% 0.005 260)", "oklch(80% 0.004 260)", "oklch(92% 0.003 260)", "#ffffff"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Mist Surface",
+        "canonical": "#f7f8fa",
+        "darkCanonical": "#13161b",
+        "tonalRamp": ["oklch(15% 0.010 260)", "oklch(24% 0.010 260)", "oklch(36% 0.008 260)", "oklch(50% 0.007 260)", "oklch(64% 0.006 260)", "oklch(78% 0.005 260)", "oklch(90% 0.004 260)", "oklch(97% 0.003 260)"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#14161a",
+        "darkCanonical": "#e8eaed",
+        "tonalRamp": ["oklch(14% 0.008 265)", "oklch(20% 0.008 265)", "oklch(30% 0.007 265)", "oklch(45% 0.006 265)", "oklch(60% 0.005 265)", "oklch(75% 0.004 265)", "oklch(88% 0.003 265)", "oklch(95% 0.002 265)"]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#5b6472",
+        "darkCanonical": "#9aa3b2",
+        "tonalRamp": ["oklch(20% 0.012 265)", "oklch(32% 0.013 265)", "oklch(45% 0.014 265)", "oklch(58% 0.014 265)", "oklch(70% 0.012 265)", "oklch(80% 0.010 265)", "oklch(88% 0.008 265)", "oklch(95% 0.005 265)"]
+      },
+      "ink-faint": {
+        "role": "neutral",
+        "displayName": "Faint Ink",
+        "canonical": "#8b95a3",
+        "darkCanonical": "#6b7480",
+        "tonalRamp": ["oklch(24% 0.012 265)", "oklch(36% 0.013 265)", "oklch(48% 0.014 265)", "oklch(60% 0.014 265)", "oklch(72% 0.012 265)", "oklch(82% 0.010 265)", "oklch(90% 0.007 265)", "oklch(96% 0.004 265)"]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#e5e8ec",
+        "darkCanonical": "#23272e",
+        "tonalRamp": ["oklch(20% 0.008 265)", "oklch(32% 0.009 265)", "oklch(45% 0.010 265)", "oklch(58% 0.010 265)", "oklch(70% 0.009 265)", "oklch(82% 0.007 265)", "oklch(91% 0.005 265)", "oklch(96% 0.003 265)"]
+      },
+      "accent-teal": {
+        "role": "primary",
+        "displayName": "Deep Teal / Laboratory Teal",
+        "canonical": "#0f766e",
+        "darkCanonical": "#2dd4bf",
+        "tonalRamp": ["oklch(18% 0.035 182)", "oklch(28% 0.055 182)", "oklch(38% 0.075 182)", "oklch(48% 0.088 182)", "oklch(58% 0.098 182)", "oklch(72% 0.115 182)", "oklch(85% 0.085 182)", "oklch(95% 0.035 182)"]
+      },
+      "accent-wash": {
+        "role": "neutral",
+        "displayName": "Accent Wash",
+        "canonical": "#e6f4f1",
+        "darkCanonical": "#0e2825",
+        "tonalRamp": ["oklch(18% 0.030 182)", "oklch(28% 0.040 182)", "oklch(40% 0.040 182)", "oklch(55% 0.040 182)", "oklch(70% 0.035 182)", "oklch(82% 0.030 182)", "oklch(90% 0.025 182)", "oklch(96% 0.020 182)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "ヒーローの名前だけに使う最大級の一箇所。" },
+      "headline": { "displayName": "Headline", "purpose": "記事タイトルと 404 見出し。" },
+      "title": { "displayName": "Title", "purpose": "タグライン、カード見出し。" },
+      "body": { "displayName": "Body", "purpose": "本文。行長 38–42rem。" },
+      "label": { "displayName": "Label / Mono", "purpose": "アイブロウ、セクション見出し、ナビ、日付などのメタ情報のみ。" }
+    },
+    "shadows": [
+      {
+        "name": "reactive-lift",
+        "value": "0 6px 20px rgba(20, 22, 26, 0.10)",
+        "purpose": "ホバー／フォーカス中の操作要素にのみ許可される唯一の反応時の影。現行コードでは未使用（確定方針としての予約）。"
+      }
+    ],
+    "motion": [
+      { "name": "reactive-fast", "value": "0.15s ease", "purpose": "インタラクティブ要素の罫線・色の変化と 1px の浮き。" },
+      { "name": "reduced-motion", "value": "0s", "purpose": "prefers-reduced-motion 時はすべてのトランジションを無効化し、スクロールを即時化する。" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Link Pill",
+      "kind": "button",
+      "refersTo": "pill",
+      "description": "外部プロフィールへの主要なリンク。太字の名前とモノスペースのハンドルを一つの丸い外殻に収める。",
+      "html": "<a class=\"ds-pill\" href=\"#\"><span class=\"ds-pill__label\">GitHub</span><span class=\"ds-pill__handle\">@cwd514</span></a>",
+      "css": ".ds-pill { display:inline-flex; align-items:baseline; gap:0.5rem; padding:0.5rem 0.9rem; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--fg); text-decoration:none; font-family:var(--font-sans); font-size:0.9rem; transition:border-color 0.15s ease, transform 0.15s ease; } .ds-pill:hover { border-color:var(--accent); transform:translateY(-1px); } .ds-pill:focus-visible { outline:2px solid var(--accent); outline-offset:3px; } .ds-pill__label { font-weight:600; } .ds-pill__handle { color:var(--muted); font-family:var(--font-mono); font-size:0.78rem; }"
+    },
+    {
+      "name": "Static Pill",
+      "kind": "chip",
+      "refersTo": "pill-static",
+      "description": "リンクではない項目（Discord など）。同じ外殻を持つがホバー反応もカーソル変化もない。",
+      "html": "<span class=\"ds-pill ds-pill--static\"><span class=\"ds-pill__label\">Discord</span><span class=\"ds-pill__handle\">su_ra_i_meu</span></span>",
+      "css": ".ds-pill--static { display:inline-flex; align-items:baseline; gap:0.5rem; padding:0.5rem 0.9rem; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--fg); font-family:var(--font-sans); font-size:0.9rem; cursor:default; } .ds-pill--static .ds-pill__label { font-weight:600; } .ds-pill--static .ds-pill__handle { color:var(--muted); font-family:var(--font-mono); font-size:0.78rem; }"
+    },
+    {
+      "name": "Note Card",
+      "kind": "card",
+      "refersTo": "note-card",
+      "description": "記事・作品一覧の一件。面のトーンと 1px 罫線だけでカードとして立ち、ホバーでティールの罫線に変わる。",
+      "html": "<a class=\"ds-note\" href=\"#\"><div class=\"ds-note__title\">ローカルLLMの量子化を試す</div><div class=\"ds-note__meta\">2026年9月26日</div><div class=\"ds-note__summary\">4bit量子化で動かした結果の記録。</div></a>",
+      "css": ".ds-note { display:block; padding:1rem 1.1rem; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); color:var(--fg); text-decoration:none; transition:border-color 0.15s ease, transform 0.15s ease; } .ds-note:hover { border-color:var(--accent); transform:translateY(-1px); } .ds-note:focus-visible { outline:2px solid var(--accent); outline-offset:3px; } .ds-note__title { font-weight:600; } .ds-note__meta { font-family:var(--font-mono); font-size:0.75rem; color:var(--faint); } .ds-note__summary { margin-top:0.25rem; color:var(--muted); font-size:0.92rem; }"
+    },
+    {
+      "name": "Empty State",
+      "kind": "custom",
+      "refersTo": "empty-state",
+      "description": "まだ公開できるものがないことを正直に見せる破線のコンテナ。淡いティールのステータスバッジを伴う。",
+      "html": "<div class=\"ds-empty\"><span class=\"ds-badge\">準備中</span><p>まだ公開できる作品や記事はありません。これから少しずつ追加していきます。</p></div>",
+      "css": ".ds-empty { border:1px dashed var(--border); border-radius:var(--radius); background:var(--surface); padding:1.5rem 1.4rem; } .ds-empty p { margin:0; color:var(--muted); } .ds-badge { display:inline-block; margin-bottom:0.75rem; padding:0.2rem 0.55rem; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-family:var(--font-mono); font-size:0.68rem; letter-spacing:0.14em; text-transform:uppercase; }"
+    },
+    {
+      "name": "Section Label",
+      "kind": "custom",
+      "refersTo": "nav-link",
+      "description": "セクションの開始を告げるモノスペースのラベル。直後に伸びる 1px のヘアラインが署名要素。",
+      "html": "<h2 class=\"ds-section-label\">About</h2>",
+      "css": ".ds-section-label { display:flex; align-items:center; gap:0.75rem; margin:0 0 1.25rem; font-family:var(--font-mono); font-size:0.78rem; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--faint); } .ds-section-label::after { content:\"\"; flex:1; height:1px; background:var(--border); }"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "ヘッダー／フッターのテキストナビ。モノスペースの小さなリンクが通常は Muted Ink、ホバーで Ink へ。",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\">About</a><a href=\"#\">Works</a></nav>",
+      "css": ".ds-nav { display:flex; gap:1.1rem; font-family:var(--font-mono); font-size:0.8rem; letter-spacing:0.04em; } .ds-nav a { color:var(--muted); text-decoration:none; transition:color 0.15s ease; } .ds-nav a:hover { color:var(--fg); } .ds-nav a:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }"
+    },
+    {
+      "name": "Brand Mark",
+      "kind": "custom",
+      "refersTo": "nav-link",
+      "description": "サイト名とアクセントのドット。アクセントが最も小さく現れる場所。",
+      "html": "<a class=\"ds-brand\" href=\"#\"><span class=\"ds-brand__dot\"></span>すい</a>",
+      "css": ".ds-brand { display:inline-flex; align-items:center; gap:0.5rem; color:var(--fg); font-weight:700; letter-spacing:0.02em; text-decoration:none; } .ds-brand__dot { width:0.5rem; height:0.5rem; border-radius:50%; background:var(--accent); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Terminal",
+    "overview": "静かな端末画面。ひとつの落ち着いたカラム、モノスペースのメタ情報、1px の罫線、そして一点だけ灯るティール。この世界は「上手く整理されたシェルセッション」のように振る舞う — 何も叫ばず、すべてが読め、記録そのものが内容になる。装飾は前に出ず、読者が数秒で「誰で、何をしている学生か」を掴めることだけを目的にする。\n\n密度はゆったりしている。最大幅 46rem の単一カラム、日本語本文に合わせた 1.85 の行送り、clamp() による流動的な余白。UI は額縁であって演目ではない。ブランドより人間が先に立つ。テーマはライト／ダークを自動で追従し、どちらでも同じ静けさを保つ。\n\nトーンは実験的で前向き — 空の状態も隠さず「準備中」として正直に見せ、これから積み上がる余地を残す。確定した拒否事項は、誇張したグラデーション・派手な影・量産型 SaaS ランディングの常套手段。",
+    "keyCharacteristics": [
+      "単一カラム、最大 46rem、流動的な余白（breakpoint ではなく clamp）。",
+      "モノスペースはメタ情報のためだけに使う。",
+      "階層は 1px の罫線と面のトーン差で作る。静止状態に影は無い。",
+      "アクセントはティール 1 色のみ。",
+      "ライト／ダーク両テーマを自動追従。",
+      "空の状態も正直に見せ、後から実データを差し込める構造。"
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "アクセントはどの画面でも面積の 10% 以下に留める。まれであること自体がその意味であり、広げた瞬間に静けさが壊れる。", "section": "colors" },
+      { "name": "The Mono Marker Rule", "body": "モノスペースは「これはメタ情報だ」という印としてのみ使う。本文・リード・説明文には決して使わない。", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "静止状態に影を置かない。階層は罫線と面のトーンで作る。影は「反応」の合図であって、構造の道具ではない。", "section": "elevation" }
+    ],
+    "dos": [
+      "Do アクセントを 1 画面あたり 10% 以下に保つ（The One Voice Rule）。",
+      "Do 階層は 1px ヘアラインとトーンの異なる面で作る（The Flat-By-Default Rule）。",
+      "Do モノスペースをメタ情報の印にだけ使う（The Mono Marker Rule）。",
+      "Do 空状態は正直に「準備中」と見せ、後から実データを差し込める構造にする。",
+      "Do ライト／ダーク両テーマの値を同時に更新する。",
+      "Do 本文の行長を 38–42rem に収め、行送り 1.85 を保つ。"
+    ],
+    "donts": [
+      "Don't 誇張したグラデーションや派手な影を使う。",
+      "Don't 量産型 SaaS ランディングの常套手段（全面ヒーロー画像、複数アクセント、常時ドロップシャドウ）を真似する。",
+      "Don't 本文をモノスペースで組む。",
+      "Don't アクセント以外の彩度の高い色を追加する。",
+      "Don't 罫線を 2px 以上に太らせる。",
+      "Don't ピルやカードの角丸を 0 にする。"
+    ]
+  }
+}
