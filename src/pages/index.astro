@@ -1,0 +1,98 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const links = [
+  { label: 'GitHub', handle: '@cwd514', href: 'https://github.com/cwd514' },
+  { label: 'X', handle: '@sui_egamer', href: 'https://x.com/sui_egamer' },
+  { label: 'Discord', handle: 'su_ra_i_meu', href: null },
+] as const;
+
+const notes = (await getCollection('notes', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+
+const dateFmt = new Intl.DateTimeFormat('ja-JP', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<BaseLayout>
+  <section class="hero wrap">
+    <p class="eyebrow">Local LLM</p>
+    <h1>すい</h1>
+    <p class="tagline">学生・地元のLLM研究中</p>
+    <p class="lead">
+      手元のマシンでローカルLLMを動かし、その挙動・限界・使いどころを試行錯誤しています。
+      ここは、その過程で得た知見と、作ったものを置いていく場所です。
+    </p>
+    <ul class="links">
+      {
+        links.map((l) =>
+          l.href ? (
+            <li>
+              <a class="pill" href={l.href} target="_blank" rel="me noopener noreferrer">
+                <span class="pill-label">{l.label}</span>
+                <span class="pill-handle">{l.handle}</span>
+              </a>
+            </li>
+          ) : (
+            <li>
+              <span class="pill pill-static">
+                <span class="pill-label">{l.label}</span>
+                <span class="pill-handle">{l.handle}</span>
+              </span>
+            </li>
+          )
+        )
+      }
+    </ul>
+  </section>
+
+  <section id="about" class="wrap">
+    <h2 class="section-title">About</h2>
+    <div class="prose">
+      <p>
+        研究の中心は、ローカル環境でLLMを動かすことです。モデルの選定や量子化、推論速度、プロンプト、
+        周辺ツールなどを実際に試し、動いたこと・詰まったことをそのまま記録しています。
+      </p>
+      <p>
+        大規模ラボの公式発表でも、企業のマーケティングでもありません。一個人の環境で何ができて、
+        何ができないのか。その一次情報を積み上げていくことを大事にしています。
+      </p>
+    </div>
+  </section>
+
+  <section id="works" class="wrap">
+    <h2 class="section-title">Works &amp; Notes</h2>
+    {
+      notes.length > 0 ? (
+        <ul class="notes">
+          {notes.map((note) => (
+            <li>
+              <a class="note" href={`/notes/${note.id}/`}>
+                <div class="note-title">{note.data.title}</div>
+                <div class="note-meta">
+                  <time datetime={note.data.date.toISOString()}>
+                    {dateFmt.format(note.data.date)}
+                  </time>
+                </div>
+                {note.data.summary && <div class="note-summary">{note.data.summary}</div>}
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div class="empty">
+          <span class="badge">準備中</span>
+          <p>
+            まだ公開できる作品や記事はありません。これから、実際に試したことや作ったものを、
+            ここに少しずつ追加していきます。
+          </p>
+        </div>
+      )
+    }
+  </section>
+</BaseLayout>
