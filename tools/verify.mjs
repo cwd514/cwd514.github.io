@@ -122,8 +122,13 @@ try {
   for (const ev of page.events) {
     if (ev.method === "Network.requestWillBeSent") requests.push(ev.params.request.url);
   }
-  const host = new URL(url).host;
-  const external = [...new Set(requests.filter((u) => !u.startsWith("http://" + host) && !u.startsWith("data:") && !u.startsWith("blob:")))];
+  /* 自ホストかどうかは origin で見る。以前は http:// 固定で比べていたので、
+     https で配った本番を「外部リクエストあり」と誤って報告していた。 */
+  const origin = new URL(url).origin;
+  const external = [...new Set(requests.filter((u) => {
+    if (u.startsWith("data:") || u.startsWith("blob:")) return false;
+    try { return new URL(u).origin !== origin; } catch { return true; }
+  }))];
   external.length === 0
     ? ok(`外部リクエスト 0（総リクエスト ${requests.length} 本、すべて自ホスト）`)
     : bad("外部リクエストあり: " + external.join(", "));
