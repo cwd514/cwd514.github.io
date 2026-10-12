@@ -38,16 +38,13 @@ find "$DEST/assets" -name '*.json' -type f -delete
 # .impeccable/build/forbidden.txt に 1 行 1 語で置く。無ければこの確認は飛ばす。
 LIST="$ROOT/.impeccable/build/forbidden.txt"
 if [ -f "$LIST" ]; then
-  ARGS=()
-  while IFS= read -r w; do
-    [ -n "$w" ] && ARGS+=(-e "$w")
-  done < "$LIST"
-  if grep -rIl "${ARGS[@]}" "$DEST" 2>/dev/null | grep -q .; then
+  # -f で一覧をそのまま渡す。配列は POSIX の sh に無い（CI の /bin/sh は dash）。
+  if grep -rIlF -f "$LIST" "$DEST" 2>/dev/null | grep -q .; then
     echo "公開しない文字列が混ざっています:" >&2
-    grep -rIl "${ARGS[@]}" "$DEST" >&2
+    grep -rIlF -f "$LIST" "$DEST" >&2
     exit 1
   fi
-  echo "公開しない文字列 $((${#ARGS[@]} / 2)) 語を確認しました。"
+  echo "公開しない文字列 $(grep -cv '^$' "$LIST") 語を確認しました。"
 else
   echo "※ $LIST が無いので、公開しない文字列の確認は飛ばしました。" >&2
 fi
