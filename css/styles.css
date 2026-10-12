@@ -1,0 +1,682 @@
+/* ==========================================================================
+   ローカル推論 実測記録 — stylesheet
+   依存ゼロ。外部からの読み込みは一切ない。
+   色は 4 つの役割だけ: 紙 / インク / 朱 / 青
+   ========================================================================== */
+
+/* --- 0. 書体 ---------------------------------------------------------------
+   ラテン字が担う役は 2 つだけ。どちらも再配布できる書体から、この紙に出る字だけを
+   部分化して積んだ（tools/subset-fonts.py）。外部への通信は増えない。
+
+     測定値と表示数字 → Hack                     コード用に設計された等幅。0 に点、1 は平ら。
+     大文字ラテンの刻印 → DejaVu Sans Condensed   細身のグロテスク。追い込んだ大文字が締まる。
+
+   日本語の本文は端末のゴシックに任せる。日本語を積むと同じ字種で 117KB になり、
+   読者の端末が既に持っている書体にその代価を払うことになるため。 */
+
+@font-face {
+  font-family: "Hack"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("../assets/fonts/hack-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Hack"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("../assets/fonts/hack-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "DejaVu Sans Condensed"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("../assets/fonts/label-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "DejaVu Sans Condensed"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("../assets/fonts/label-700.woff2") format("woff2");
+}
+
+/* --- 1. トークン ---------------------------------------------------------- */
+
+:root {
+  color-scheme: light dark;
+
+  /* 紙 — 冷たい青白い印刷用紙 */
+  --paper: #eef0f2;
+  --paper-2: #e4e8ea;      /* 表の縞、沈んだ面 */
+  --plot: #dce9ef;         /* グラフのプロット面 */
+
+  /* インク — 青黒い印刷インク */
+  --ink: #10161c;
+  --ink-soft: #4a575f;
+  --rule: #9fb0bb;         /* 装飾の罫線 */
+  --axis: #6b7d88;         /* 目盛り・軸（3:1 以上） */
+  --grid: #c3ced4;         /* グラフ内の目安線 */
+
+  /* 朱 — 定格・禁止領域・採用。境界を意味する色 */
+  --limit: #c8102e;
+
+  /* 青 — 実測値。曲線・点・数値。測ったものを意味する色 */
+  --safe: #1d5b7a;
+  --safe-2: #5b8ea6;
+
+  --font-prose: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic",
+    "Noto Sans CJK JP", "Noto Sans JP", Meiryo, system-ui, sans-serif;
+  --font-ui: "DejaVu Sans Condensed", "Helvetica Neue", Helvetica, Arial,
+    "Liberation Sans", "Noto Sans", sans-serif;
+  --font-mono: "Hack", ui-monospace, "SFMono-Regular", "DejaVu Sans Mono",
+    "Liberation Mono", Menlo, Consolas, monospace;
+
+  /* 小さい字の下限。日本語は同じ寸法でもラテンより小さく見えるので、段を分ける。
+     0.7rem = 11.2px / 0.75rem = 12px。これより小さい字はこの紙に出さない。 */
+  --t-lat: 0.7rem;
+  --t-jp: 0.75rem;
+
+  --shell: 1240px;
+  --gut: clamp(1rem, 4vw, 3rem);
+  --rail-h: 4.25rem;
+  --hair: 1px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 反転印刷。同じ版面のまま紙とインクを入れ替える */
+    --paper: #0d1418;
+    --paper-2: #131e24;
+    --plot: #101b21;
+    --ink: #e6eef2;
+    --ink-soft: #93a6b0;
+    --rule: #38505c;
+    --axis: #7e97a4;
+    --grid: #24343d;
+    --limit: #ff5a4d;
+    --safe: #5fb8d8;
+    --safe-2: #7fa8bd;
+  }
+}
+
+/* --- 2. 基礎 -------------------------------------------------------------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-prose);
+  font-size: clamp(0.9375rem, 0.35vw + 0.85rem, 1.0625rem);
+  line-height: 1.85;
+  font-feature-settings: "tnum" 1;
+  padding-bottom: 4rem;
+  overflow-x: clip;
+}
+
+h1, h2, h3, p, dl, dd, dt, figure, ol, ul, fieldset { margin: 0; padding: 0; }
+ol, ul { list-style: none; }
+fieldset { border: 0; }
+img, svg { display: block; max-width: 100%; }
+
+a { color: var(--safe); text-underline-offset: 0.22em; text-decoration-thickness: 1px; }
+
+/* 自分で描いていない面も、この紙とインクの側に寄せておく。 */
+::selection {
+  background: color-mix(in srgb, var(--limit) 22%, var(--paper));
+  color: var(--ink);
+}
+html { caret-color: var(--limit); accent-color: var(--limit); }
+html { scrollbar-color: var(--rule) var(--paper-2); }
+@supports (scrollbar-width: thin) { html { scrollbar-width: thin; } }
+a:hover { color: var(--limit); }
+a:focus-visible,
+input:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--limit);
+  outline-offset: 2px;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--paper-2);
+  padding: 0.1em 0.34em;
+  border: var(--hair) solid var(--rule);
+  word-break: break-word;
+}
+
+em { font-style: normal; font-weight: 700; color: var(--safe); }
+b, strong { font-weight: 700; }
+
+.vh {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+.skip {
+  position: absolute; left: 0; top: 0; z-index: 100;
+  min-height: 2.75rem; display: flex; align-items: center;
+  background: var(--ink); color: var(--paper);
+  padding: 0 1.1rem; font-weight: 700;
+  transform: translateY(-110%);
+  transition: transform 0.14s ease-out;
+}
+.skip:focus { transform: translateY(0); }
+/* スキップリンクはインクの面。全体の a:hover が朱に変えると、朱がインクに乗って 2.6:1 まで落ちる。
+   面の側を勝たせる。 */
+.skip:hover, .skip:focus { color: var(--paper); }
+
+/* --- 3. 型番帯 ------------------------------------------------------------ */
+
+.band {
+  border-bottom: 3px solid var(--ink);
+  background: var(--paper);
+}
+
+.band-top {
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: clamp(0.85rem, 1.6vw, 1.2rem) var(--gut) 0.7rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem clamp(1rem, 3vw, 2.5rem);
+  align-items: end;
+}
+
+.band-doc { grid-column: 1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.7rem; }
+.band-kind { font-size: clamp(1.1rem, 2.6vw, 1.7rem); font-weight: 700; letter-spacing: 0.01em; }
+.band-en {
+  font-family: var(--font-ui);
+  font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.band-sub { grid-column: 1; color: var(--ink-soft); font-size: 0.9rem; }
+
+.band-meta {
+  grid-column: 2; grid-row: 1 / span 2;
+  display: grid; grid-template-columns: auto auto;
+  gap: 0.15rem 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  text-align: right;
+}
+.band-meta div { display: contents; }
+.band-meta dt { color: var(--ink-soft); letter-spacing: 0.06em; }
+.band-meta dd { color: var(--ink); font-weight: 700; }
+
+.band-nav {
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: 0 var(--gut);
+  overflow-x: auto;
+}
+.band-nav ol {
+  display: flex; gap: 0;
+  border-top: var(--hair) solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+.band-nav li { display: flex; }
+.band-nav li + li::before {
+  content: "·"; color: var(--rule);
+  align-self: center; margin: 0 0.1rem;
+}
+/* 目次は指で押す。文字の高さではなく、44px の当たり判定を持たせる。 */
+.band-nav a {
+  display: flex; align-items: center;
+  min-height: 2.75rem; padding: 0 0.6rem;
+  color: var(--ink-soft); text-decoration: none;
+  border-bottom: 3px solid transparent;
+}
+.band-nav a:hover { color: var(--limit); border-bottom-color: var(--rule); }
+.band-nav a[aria-current="true"] { color: var(--ink); font-weight: 700; border-bottom-color: var(--limit); }
+
+/* --- 4. 動作点レール ------------------------------------------------------ */
+
+.rail {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--paper);
+  border-bottom: 3px solid var(--ink);
+}
+
+.rail-inner {
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: 0.35rem var(--gut);
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 0.4rem clamp(0.75rem, 2vw, 1.5rem);
+}
+
+.rail-title { display: flex; align-items: baseline; gap: 0.45rem; font-weight: 700; font-size: 0.82rem; }
+.rail-en { font-family: var(--font-ui); font-size: var(--t-lat); letter-spacing: 0.13em; color: var(--ink-soft); text-transform: uppercase; }
+
+.quant { display: flex; align-items: center; gap: 0.3rem; }
+.quant legend {
+  float: left; font-size: var(--t-jp); color: var(--ink-soft);
+  margin-right: 0.5rem; letter-spacing: 0.04em;
+}
+.quant label {
+  display: inline-flex; align-items: center; min-height: 2.75rem;
+  padding: 0 0.7rem; cursor: pointer;
+  border: var(--hair) solid var(--rule);
+  font-family: var(--font-mono); font-size: 0.78rem;
+}
+.quant input { position: absolute; opacity: 0; width: 0; height: 0; }
+.quant label:has(input:checked) { border-color: var(--ink); background: var(--ink); color: var(--paper); font-weight: 700; }
+.quant label:has(input:focus-visible) { outline: 3px solid var(--limit); outline-offset: 2px; }
+.quant label:hover { border-color: var(--ink); }
+
+/* 中身（見出し＋摺動子＋数値）が入りきらない幅なら、縮めずに次の行へ落とす。 */
+.rail-ctx { display: flex; align-items: center; gap: 0.6rem; flex: 1 1 12rem; min-width: min(100%, 19rem); }
+.rail-ctx label { font-size: var(--t-jp); color: var(--ink-soft); white-space: nowrap; min-height: 2.75rem; display: flex; align-items: center; padding: 0 0.4rem; margin-left: -0.4rem; }
+.rail-ctx input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  flex: 1; height: 2.75rem; background: transparent; margin: 0; cursor: pointer;
+}
+.rail-ctx input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px; background: var(--paper-2); border: var(--hair) solid var(--axis);
+}
+.rail-ctx input[type="range"]::-moz-range-track {
+  height: 6px; background: var(--paper-2); border: var(--hair) solid var(--axis);
+}
+.rail-ctx input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 26px; margin-top: -11px;
+  background: var(--limit); border: 2px solid var(--paper);
+}
+.rail-ctx input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 26px; border-radius: 0;
+  background: var(--limit); border: 2px solid var(--paper);
+}
+.rail-ctx output {
+  font-family: var(--font-mono); font-weight: 700; font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 5.4rem; text-align: right;
+}
+
+.readout { display: flex; flex-wrap: wrap; gap: 0 1.1rem; font-family: var(--font-mono); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.readout > div { display: flex; align-items: baseline; gap: 0.35rem; }
+.readout dt { color: var(--ink-soft); }
+.readout dd { margin: 0; font-weight: 700; color: var(--safe); }
+/* 食い違う点だけに出る但し書き。1 つの数字で半分だけ言うのを避ける。 */
+.readout .ro-note { font-size: 0.86em; color: var(--ink-soft); margin-left: 0.35em; }
+.readout .ro-note:empty { display: none; }
+
+.readout .u { color: var(--ink-soft); font-size: 0.9em; margin-left: 0.15em; font-weight: 400; }
+
+/* --- 5. 節 ----------------------------------------------------------------- */
+
+main { max-width: var(--shell); margin: 0 auto; padding: 0 var(--gut); }
+
+.sec { padding: clamp(2.2rem, 5vw, 4rem) 0; border-top: var(--hair) solid var(--rule); scroll-margin-top: calc(var(--rail-h) + 1.5rem); }
+.hero { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: clamp(1.5rem, 4vw, 3.25rem); align-items: start; }
+.hero .sec { border-top: 0; padding-top: clamp(1.1rem, 2.2vw, 1.7rem); }
+.sec-general { padding-bottom: 0 !important; }
+
+h2 {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.55rem;
+  font-size: clamp(1.15rem, 2.4vw, 1.55rem);
+  line-height: 1.35;
+  font-weight: 700;
+  padding-bottom: 0.5rem;
+  border-bottom: 3px solid var(--ink);
+  margin-bottom: 1.2rem;
+}
+h2 .no {
+  font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--paper); background: var(--ink);
+  padding: 0.15em 0.45em; line-height: 1.3;
+}
+h2 .en {
+  font-family: var(--font-ui); font-size: var(--t-lat); letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-soft); font-weight: 400;
+  margin-left: auto;
+}
+
+h3.sub {
+  display: flex; align-items: baseline; gap: 0.5rem;
+  font-size: 0.92rem; font-weight: 700;
+  margin: 1.6rem 0 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: var(--hair) solid var(--rule);
+}
+h3.sub .en { font-family: var(--font-ui); font-size: var(--t-lat); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); font-weight: 400; }
+
+.sec > p { max-width: 74ch; }
+.sec > p + p { margin-top: 0.9rem; }
+.lede { color: var(--ink); margin-bottom: 1.4rem; }
+.lede + .lede { margin-top: -0.6rem; }
+
+/* --- 6. 絶対最大定格 ------------------------------------------------------ */
+
+.sec-max { position: relative; }
+
+.max-note { font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 0.8rem !important; }
+
+.rating {
+  position: relative;
+  border: 2.5px solid var(--limit);
+  border-top-width: 9px;
+  padding: 0.85rem 1.05rem 1rem;
+  background: var(--paper);
+}
+.rating-label {
+  display: flex; align-items: baseline; gap: 0.5rem;
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--limit);
+}
+.rating-label .en { font-family: var(--font-ui); font-size: var(--t-lat); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); font-weight: 400; }
+
+.rating-figure {
+  display: flex; align-items: baseline; gap: 0.06em;
+  font-family: var(--font-mono); font-weight: 700;
+  font-size: clamp(4.4rem, 14vw, 8.8rem);
+  line-height: 0.84;
+  letter-spacing: -0.04em;
+  color: var(--limit);
+  /* 定格の数字は自分の枠に収まらない。朱の枠線を越えて左へ張り出す。 */
+  margin: 0.2rem 0 0.1rem calc(-1.05rem - 0.3em);
+  position: relative;
+  z-index: 2;
+  white-space: nowrap;
+}
+.rf-unit { font-size: 0.26em; letter-spacing: 0.02em; }
+
+.rating-exact {
+  font-size: 0.82rem; color: var(--ink-soft);
+  padding-top: 0.5rem; border-top: var(--hair) solid var(--rule);
+}
+.rating-exact b { font-family: var(--font-mono); font-size: 0.95rem; color: var(--ink); }
+
+.tbl-max { margin-top: 1.1rem; }
+.max-warn {
+  margin-top: 1.1rem; font-size: 0.83rem; line-height: 1.7;
+  border-top: var(--hair) solid var(--rule); padding-top: 0.6rem;
+}
+.max-warn b { color: var(--limit); }
+
+/* --- 7. 主要特性 ---------------------------------------------------------- */
+
+.key { margin-top: 0.4rem; border-top: var(--hair) solid var(--rule); }
+.key li {
+  display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  gap: 0.3rem 1rem;
+  padding: 0.38rem 0;
+  border-bottom: var(--hair) solid var(--rule);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+.key b { font-weight: 700; }
+.key span { color: var(--ink-soft); }
+.key em { font-family: var(--font-mono); font-size: 1.02em; }
+/* どのモデルの値かは、行ではなく群の見出しが名乗る。行の先頭に置くと、
+   数を読みに来た目が先にモデル名を拾ってしまい、しかも同じ字が 4 行続く。 */
+.key-who {
+  display: flex; align-items: baseline; gap: 0 0.7rem; flex-wrap: wrap;
+  margin-top: 1rem;
+  font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.key-who span { font-weight: 400; font-size: var(--t-jp); color: var(--ink-soft); }
+
+/* --- 8. 表 ---------------------------------------------------------------- */
+
+.scroll { overflow-x: auto; margin: 0 calc(var(--gut) * -1); padding: 0 var(--gut); }
+
+.tbl {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.82rem; line-height: 1.5;
+}
+.tbl caption { text-align: left; }
+.tbl th, .tbl td { text-align: left; padding: 0.42rem 0.6rem; border-bottom: var(--hair) solid var(--rule); vertical-align: baseline; }
+.tbl thead th {
+  border-bottom: 2px solid var(--ink);
+  border-top: 2px solid var(--ink);
+  font-size: 0.7rem; letter-spacing: 0.04em;
+  white-space: nowrap;
+  padding-top: 0.5rem; padding-bottom: 0.5rem;
+}
+.tbl thead th .u { display: block; font-family: var(--font-mono); font-size: var(--t-lat); font-weight: 400; color: var(--ink-soft); letter-spacing: 0; }
+.tbl tbody th { font-weight: 400; }
+.tbl .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tbl .empty { color: var(--ink-soft); }
+.tbl .u { font-family: var(--font-mono); font-size: var(--t-lat); color: var(--ink-soft); margin-left: 0.15em; }
+
+.tbl tbody tr:hover { background: var(--paper-2); }
+
+.adopted { background: color-mix(in srgb, var(--limit) 7%, var(--paper)); }
+.adopted th, .adopted td { border-bottom-color: var(--limit); }
+.adopted .num { font-weight: 700; color: var(--limit); }
+.tag {
+  display: inline-block; margin-left: 0.5rem;
+  background: var(--limit); color: var(--paper);
+  font-family: var(--font-prose); font-size: var(--t-jp); font-weight: 700;
+  padding: 0.1em 0.5em; letter-spacing: 0.06em;
+  vertical-align: 0.1em;
+}
+.tbl .fail { color: var(--limit); }
+.tbl tr.fail td { color: var(--limit); }
+
+.tbl-ladder { min-width: 46rem; }
+.tbl-sweep { min-width: 44rem; }
+.tbl-sweep .rowhead {
+  border-right: 2px solid var(--ink);
+  font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem;
+  border-bottom: var(--hair) solid var(--rule);
+}
+.tbl-sweep .peak { font-weight: 700; }
+
+/* 二段の見出し。prefill 側と decode 側で同じ列名が並ぶので、括りを明示する。 */
+.tbl-sweep thead th[rowspan="2"] { border-bottom: 0; vertical-align: bottom; }
+.tbl-sweep thead th[colspan] {
+  text-align: center; font-weight: 600;
+  border-bottom: var(--hair) solid var(--rule);
+}
+.tbl-sweep thead tr:last-child th { border-top: 0; }
+.tbl-sweep tbody tr:has(td[colspan]) { background: color-mix(in srgb, var(--limit) 6%, var(--paper)); }
+
+.tbl-foot {
+  margin-top: 1rem; font-size: 0.86rem; line-height: 1.75;
+  border-top: var(--hair) solid var(--rule); padding-top: 0.8rem;
+  max-width: 82ch;
+}
+.tbl-foot b { color: var(--limit); }
+
+.tbl-app { margin-top: 1.6rem; }
+.tbl-app th { width: 8rem; color: var(--ink-soft); font-size: 0.76rem; letter-spacing: 0.04em; }
+
+.tbl-rev td:first-of-type { white-space: nowrap; }
+
+/* --- 9. グラフ ------------------------------------------------------------ */
+
+.charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: clamp(1.2rem, 3vw, 2rem);
+  align-items: start;
+}
+.panel-col { display: grid; gap: clamp(1.2rem, 3vw, 2rem); }
+
+.panel { border: var(--hair) solid var(--rule); padding: 0.75rem 0.85rem 0.9rem; background: var(--paper); }
+.panel figcaption {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem;
+  font-size: 0.8rem; font-weight: 700;
+  padding-bottom: 0.5rem; margin-bottom: 0.5rem;
+  border-bottom: 2px solid var(--ink);
+}
+.p-no { font-family: var(--font-mono); font-size: 0.7rem; color: var(--limit); }
+.p-en { font-family: var(--font-ui); font-size: var(--t-lat); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); font-weight: 400; margin-left: auto; }
+
+.plot { width: 100%; height: auto; }
+.plot .frame { fill: var(--plot); stroke: var(--axis); stroke-width: 1.2; }
+.plot .grid line { stroke: var(--grid); stroke-width: 0.7; }
+.plot .ticks line { stroke: var(--axis); stroke-width: 1.1; }
+.plot .axis-label text {
+  fill: var(--ink-soft); font-family: var(--font-mono); font-size: 9.5px;
+  text-anchor: end;
+}
+.plot .axis-label text:nth-child(n+6):nth-child(-n+10) { text-anchor: middle; }
+.plot .axis-unit { fill: var(--ink-soft); font-size: 9px; }
+
+.plot .limit-line { stroke: var(--limit); stroke-width: 2.4; }
+.plot .limit-label {
+  fill: var(--limit); font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+}
+.plot .forbidden { opacity: 0.5; }
+.plot .fail-mark line { stroke: var(--limit); stroke-width: 2.4; }
+.plot .fail-label {
+  fill: var(--limit); font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+}
+.plot .empty-note text {
+  fill: var(--ink-soft); font-family: var(--font-mono); font-size: 10px;
+}
+
+.plot .series .pt-line { fill: none; stroke-width: 1.8; }
+.plot .s-iq3 .pt-line { stroke: var(--safe); }
+.plot .s-iq2 .pt-line { stroke: var(--safe-2); }
+.plot .s-iq3 circle { fill: var(--safe); stroke: var(--paper); stroke-width: 1.6; }
+.plot .s-iq2 circle { fill: var(--paper); stroke: var(--safe-2); stroke-width: 2; }
+.plot .unmeasured {
+  stroke: var(--ink-soft); stroke-width: 1.2;
+  stroke-dasharray: 2 4; opacity: 0.55;
+}
+
+.plot .cursor { stroke: var(--limit); stroke-width: 1.6; stroke-dasharray: 4 3; }
+.plot .cursor-dot { fill: var(--limit); stroke: var(--paper); stroke-width: 2; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 0.3rem 1.1rem; margin-top: 0.7rem; font-family: var(--font-mono); font-size: var(--t-jp); color: var(--ink-soft); }
+.legend li { display: flex; align-items: center; gap: 0.4rem; }
+.legend .sw { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+.lg-iq3 .sw { background: var(--safe); }
+.lg-iq2 .sw { background: var(--paper); border: 2px solid var(--safe-2); }
+.lg-fail .sw { background: none; border: 0; position: relative; }
+.lg-fail .sw::before, .lg-fail .sw::after {
+  content: ""; position: absolute; left: 0; top: 5px; width: 11px; height: 2px; background: var(--limit);
+}
+.lg-fail .sw::before { transform: rotate(45deg); }
+.lg-fail .sw::after { transform: rotate(-45deg); }
+
+.panel-read {
+  margin-top: 0.9rem; padding-top: 0.8rem;
+  border-top: var(--hair) solid var(--rule);
+  font-size: 0.82rem; line-height: 1.75; color: var(--ink-soft);
+}
+.panel-read b { color: var(--limit); font-family: var(--font-mono); font-size: 1.05em; }
+
+.fig-notes { margin-top: 1.6rem; border-top: var(--hair) solid var(--rule); padding-top: 0.9rem; max-width: 82ch; }
+.fig-notes li {
+  position: relative; padding-left: 2.1rem; margin-bottom: 0.45rem;
+  font-size: 0.82rem; line-height: 1.7; color: var(--ink-soft);
+}
+.fig-notes li::before {
+  content: counter(list-item); counter-increment: none;
+  position: absolute; left: 0; top: 0.05rem;
+  font-family: var(--font-mono); font-size: var(--t-lat); font-weight: 700;
+  color: var(--paper); background: var(--ink-soft);
+  width: 1.4rem; height: 1.4rem; line-height: 1.4rem; text-align: center;
+}
+
+/* --- 10. 図版 ------------------------------------------------------------- */
+
+.plates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(0.8rem, 2vw, 1.4rem); }
+.plates figure { border: var(--hair) solid var(--rule); padding: 0.5rem; }
+.plates img { width: 100%; height: auto; border: var(--hair) solid var(--rule); background: var(--paper-2); }
+.plates figcaption { font-size: 0.76rem; color: var(--ink-soft); padding-top: 0.5rem; line-height: 1.6; }
+.plates .p-no { margin-right: 0.4rem; }
+
+/* --- 11. 計測条件 --------------------------------------------------------- */
+
+.two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(1.5rem, 4vw, 3rem); align-items: start; }
+.conds .sub:first-child { margin-top: 0; }
+.mono-list li {
+  padding: 0.4rem 0; border-bottom: var(--hair) solid var(--rule);
+  font-size: 0.85rem; line-height: 1.65;
+}
+.mono-list li:last-child { border-bottom: 0; }
+.mono-list code { background: none; border: 0; padding: 0; color: var(--safe); font-weight: 700; }
+
+/* --- 12. 注記 ------------------------------------------------------------- */
+
+.notes { counter-reset: n; max-width: 82ch; }
+.notes li {
+  position: relative; padding-left: 2.2rem; padding-bottom: 0.6rem;
+  font-size: 0.86rem; line-height: 1.75;
+  border-bottom: var(--hair) solid var(--rule);
+  margin-bottom: 0.6rem;
+}
+.notes li::before {
+  counter-increment: n; content: counter(n);
+  position: absolute; left: 0; top: 0.1rem;
+  font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700;
+  color: var(--paper); background: var(--ink);
+  width: 1.6rem; height: 1.6rem; line-height: 1.6rem; text-align: center;
+}
+
+/* --- 13. 注文情報 --------------------------------------------------------- */
+
+.contact { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 0.8rem; margin-top: 0.5rem; }
+.contact li { border: var(--hair) solid var(--rule); border-top: 3px solid var(--ink); padding: 0.8rem 1rem; }
+.c-label { display: block; font-family: var(--font-ui); font-size: var(--t-lat); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 0.2rem; }
+.contact a, .c-disc { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; word-break: break-all; }
+/* 連絡先は指で押す。文字の高さではなく 44px の当たり判定を持たせる。 */
+.contact a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+.ext { font-family: var(--font-ui); margin-left: 0.25em; font-size: 0.8em; }
+.contact-note { margin-top: 1rem; font-size: 0.82rem; color: var(--ink-soft); }
+
+/* --- 14. 免責 ------------------------------------------------------------- */
+
+.disclaimer {
+  max-width: var(--shell); margin: 0 auto;
+  padding: 1.8rem var(--gut) 0;
+  border-top: 3px solid var(--ink);
+  font-size: 0.8rem; line-height: 1.75; color: var(--ink-soft);
+}
+.disclaimer b { color: var(--limit); }
+.fin { margin-top: 0.9rem; font-family: var(--font-mono); font-size: 0.72rem; }
+
+/* --- 15. 応答 ----------------------------------------------------------------- */
+
+@media (max-width: 60rem) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .sec-general { padding-bottom: 0 !important; }
+  .charts { grid-template-columns: minmax(0, 1fr); }
+  .two-col { grid-template-columns: minmax(0, 1fr); }
+  .band-meta { text-align: left; }
+  /* 一段になったら張り出しを止める（余白が足りない） */
+  .rating-figure { margin-left: calc(-1.05rem - 0.05em); }
+}
+
+@media (max-width: 44rem) {
+  .band-top { grid-template-columns: minmax(0, 1fr); }
+  .band-meta { grid-column: 1; grid-row: auto; grid-template-columns: auto 1fr; margin-top: 0.5rem; text-align: left; }
+  .band-meta dd { text-align: left; }
+  .band-en { display: none; }
+  .band-nav { overflow-x: visible; }
+  .band-nav ol { flex-wrap: wrap; gap: 0 0.1rem; }
+  .band-nav li + li::before { content: none; }
+  .band-nav a { padding: 0 0.5rem; }
+  .rail-inner { gap: 0.3rem 0.6rem; }
+  .rail-title { width: 100%; }
+  .readout { gap: 0 0.8rem; }
+  .plates { grid-template-columns: minmax(0, 1fr); }
+  .key li { grid-template-columns: minmax(0, 1fr); }
+  .rating-figure { font-size: clamp(4rem, 26vw, 7rem); }
+  main { padding-bottom: 1rem; }
+}
+
+@media (max-width: 30rem) {
+  .rail-ctx { flex: 1 1 100%; }
+  .readout { gap: 0 0.7rem; }
+  /* ngl は仕組みの説明。狭い画面では定格と速度を優先して落とす。 */
+  .readout > div:nth-child(3) { display: none; }
+  :root { --rail-h: 11.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+@media print {
+  .rail, .band-nav, .skip { display: none; }
+  body { padding-bottom: 0; font-size: 10pt; }
+  .sec { break-inside: avoid; padding: 1.2rem 0; }
+  .panel, .plates figure, .rating { break-inside: avoid; }
+  a { color: inherit; text-decoration: none; }
+}

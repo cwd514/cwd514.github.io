@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ローカル推論 実測記録 — すい</title>
+<meta name="description" content="GeForce RTX 5060 Ti 8 GB の内側で、35B MoE モデルを 131,072 トークンの文脈で動かした実測記録。TTFT 191 秒 → 121 秒。すべて実機の測定値。">
+<meta name="author" content="すい">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#eef0f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1418" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23eef0f2'/%3E%3Cpath d='M4 24.5 10.5 21 17 22.5 23.5 13.5 28 11.5' fill='none' stroke='%2310161c' stroke-width='2.6' stroke-linejoin='round' stroke-linecap='round'/%3E%3Cpath d='M4 7h24' stroke='%23c8102e' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="canonical" href="https://cwd514.github.io/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="ローカル推論 実測記録">
+<meta property="og:url" content="https://cwd514.github.io/">
+<meta property="og:title" content="ローカル推論 実測記録 — すい">
+<meta property="og:description" content="8 GB の内側で 131,072 トークンを動かす。実機の測定値のみ。">
+<meta property="og:image" content="https://cwd514.github.io/assets/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="文書番号 SUI-LOCAL-001 の紙面。朱枠の定格欄に 8 GB、その下に実機の報告値 7,790 MiB。">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cwd514.github.io/assets/img/og.png">
+<link rel="preload" href="assets/fonts/hack-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">本文へスキップ</a>
+
+<header class="band">
+  <div class="band-top">
+    <p class="band-doc">
+      <span class="band-kind">ローカル推論 実測記録</span>
+      <span class="band-en">MEASUREMENT RECORD</span>
+    </p>
+    <p class="band-sub">すい — 学生・地元のLLM研究中</p>
+    <dl class="band-meta">
+      <div><dt>文書番号</dt><dd>SUI-LOCAL-001</dd></div>
+      <div><dt>改訂</dt><dd>1</dd></div>
+      <div><dt>日付</dt><dd>2026-10-12</dd></div>
+      <div><dt>頁</dt><dd>1 / 1</dd></div>
+    </dl>
+  </div>
+  <nav class="band-nav" aria-label="本文の目次">
+    <ol>
+      <li><a href="#general">1 一般説明</a></li>
+      <li><a href="#max">2 絶対最大定格</a></li>
+      <li><a href="#charts">3 実測特性</a></li>
+      <li><a href="#ladder">4 構成ラダー</a></li>
+      <li><a href="#sweep">5 量子化スイープ</a></li>
+      <li><a href="#application">6 応用情報</a></li>
+      <li><a href="#conditions">7 計測条件</a></li>
+      <li><a href="#notes">8 注記</a></li>
+      <li><a href="#revision">9 改訂履歴</a></li>
+      <li><a href="#ordering">10 注文情報</a></li>
+    </ol>
+  </nav>
+</header>
+
+<div class="rail">
+  <div class="rail-inner">
+    <p class="rail-title"><span>動作点</span><span class="rail-en">OPERATING POINT</span></p>
+
+    <fieldset class="quant">
+      <legend>量子化（Qwen3.8-27B）</legend>
+      <label><input type="radio" name="quant" value="IQ3_S" checked><span>IQ3_S</span></label>
+      <label><input type="radio" name="quant" value="IQ2_XS"><span>IQ2_XS</span></label>
+    </fieldset>
+
+    <div class="rail-ctx">
+      <label for="ctx">文脈長</label>
+      <input type="range" id="ctx" min="0" max="4" step="1" value="4">
+      <output id="ctx-out" for="ctx">131,072</output>
+    </div>
+
+    <dl class="readout" id="readout">
+      <div><dt>prefill</dt><dd><span data-ro="prefill">333.3</span><span class="u">tok/s</span></dd></div>
+      <div><dt>decode</dt><dd><span data-ro="decode">1.61</span><span class="u">tok/s</span></dd></div>
+      <div><dt>ngl</dt><dd><span data-ro="ngl">20</span><span class="u">層</span><span class="ro-note" data-note="ngl"></span></dd></div>
+      <div><dt>ピーク VRAM</dt><dd><span data-ro="vram">6,944</span><span class="u">MiB</span></dd></div>
+      <div><dt>定格比</dt><dd><span data-ro="ratio">89.1</span><span class="u">%</span></dd></div>
+    </dl>
+    <p class="vh" id="announce" aria-live="polite"></p>
+  </div>
+</div>
+
+<main id="main">
+
+  <div class="hero">
+    <section class="sec sec-general" id="general" aria-labelledby="h-general">
+      <h2 id="h-general"><span class="no">1</span>一般説明<span class="en">GENERAL DESCRIPTION</span></h2>
+      <p>手元の 1 台で、自分が持っている以上の大きさのモデルを動かす。そのために何を変え、どの数字がどう動いたかの記録です。GPU は 8 GB しかありません。対象のモデルは 21.1 GB あります。重みは 4 bit に畳まれ、入りきらない分は CPU に残したまま、それでも 131,072 トークンの文脈が確保されました。</p>
+      <p>ここに載っている数字はすべて、この 1 台で実際に測ったものです。測っていない欄は空けてあります。曲線は実測点の間を補間していません。</p>
+
+      <h3 class="sub">主要特性<span class="en">KEY CHARACTERISTICS</span></h3>
+      <p class="key-who">Qwen3.6-35B-A3B<span>21.1 GB / Q4_K_M / 131,072 文脈</span></p>
+      <ul class="key">
+        <li><b>130k 文脈の初回トークンまで</b><span>191 秒 → <em>121 秒</em>（1.6 倍）</span></li>
+        <li><b>prefill 速度</b><span>667 → <em>1,075</em> tok/s</span></li>
+        <li><b>decode 速度</b><span>同等（約 <em>30–45</em> tok/s）を維持</span></li>
+        <li><b>前置きキャッシュ</b><span>同一 prefix の再投入で <em>46 倍</em>（8k で 2.8 秒 → 0.06 秒）</span></li>
+      </ul>
+      <p class="key-who">Qwen3.8-27B<span>量子化 × 文脈長スイープ</span></p>
+      <ul class="key">
+        <li><b>131k で到達した量子化</b><span><em>IQ3_S</em>（ngl 20 / 6,944 MiB）</span></li>
+      </ul>
+    </section>
+
+    <section class="sec sec-max" id="max" aria-labelledby="h-max">
+      <h2 id="h-max"><span class="no">2</span>絶対最大定格<span class="en">ABSOLUTE MAXIMUM RATINGS</span></h2>
+      <p class="max-note">これを超える領域では、測定そのものが成立しません。</p>
+
+      <div class="rating" data-vram-limit="7790">
+        <p class="rating-label">VRAM<span class="en">ビデオメモリ</span></p>
+        <p class="rating-figure"><span class="rf-num">8</span><span class="rf-unit">GB</span></p>
+        <p class="rating-exact">実機の報告値 <b>7,790 MiB</b>（公称 8 GB）</p>
+      </div>
+
+      <table class="tbl tbl-max">
+        <caption class="vh">絶対最大定格の一覧</caption>
+        <thead>
+          <tr><th scope="col">項目</th><th scope="col">定格</th><th scope="col">根拠</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">VRAM</th><td class="num">7,790 MiB</td><td>ggml のデバイス報告値</td></tr>
+          <tr><th scope="row">RAM</th><td class="num">31 GiB</td><td><code>free</code></td></tr>
+          <tr><th scope="row">文脈長</th><td class="num">131,072</td><td>確保に成功した最大値</td></tr>
+          <tr><th scope="row">KV キャッシュ</th><td class="num">q8_0</td><td>計測時の設定</td></tr>
+          <tr><th scope="row">flash-attn</th><td class="num">on</td><td>計測時の設定</td></tr>
+        </tbody>
+      </table>
+
+      <p class="max-warn"><b>実測された限界</b> — <code>ub4096</code> は OOM で abort しました。Qwen3.8-27B の IQ2_XS は 131,072 で <code>ngl</code> 36 と 32 を試し、どちらも文脈を確保できずに終了しています（36 は context を作れず、32 は CUDA error）。掃引はそこで止まったので、<b>これより低い <code>ngl</code> は試していません</b>。VRAM の定格 7,790 MiB は推定ではなく、実機が報告した値です。</p>
+    </section>
+  </div>
+
+  <section class="sec" id="charts" aria-labelledby="h-charts">
+    <h2 id="h-charts"><span class="no">3</span>実測特性<span class="en">MEASURED CHARACTERISTICS</span></h2>
+    <p class="lede">Qwen3.8-27B（2026-09-28 計測）。横軸は文脈長、縦軸は実測値。線は実測点を結んだだけで、<b>その間は測っていません</b>。灰色の破線は、値が無いまま終わる区間です。補間した曲線は引いていません。</p>
+
+    <div class="charts">
+      <figure class="panel panel-soa">
+        <figcaption>
+          <span class="p-no">図 3-1</span>
+          <span class="p-title">ピーク VRAM と安全動作領域</span>
+          <span class="p-en">PEAK VRAM / SAFE OPERATING AREA</span>
+        </figcaption>
+        <svg viewBox="0 0 360 300" role="img" aria-labelledby="soa-t soa-d" class="plot">
+          <title id="soa-t">ピーク VRAM の実測値と 7,790 MiB の定格線</title>
+          <desc id="soa-d">IQ3_S は 6,944 から 7,682 MiB、IQ2_XS は 7,406 から 7,772 MiB の範囲で推移し、すべて定格 7,790 MiB の直下に張り付いている。IQ2_XS の 131,072 は 2 構成とも確保できず、値がありません。</desc>
+          <defs>
+            <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="5" stroke="var(--limit)" stroke-width="1.4"></line>
+            </pattern>
+          </defs>
+          <text class="limit-label" x="46" y="16">定格 7,790 MiB</text>
+          <rect class="forbidden" x="46" y="26" width="298" height="6" fill="url(#hatch)"></rect>
+          <rect class="frame" x="46" y="26" width="298" height="226"></rect>
+          <g class="grid">
+            <line x1="46" y1="82.5" x2="344" y2="82.5"></line>
+            <line x1="46" y1="139" x2="344" y2="139"></line>
+            <line x1="46" y1="195.5" x2="344" y2="195.5"></line>
+          </g>
+          <g class="ticks">
+            <line x1="46" y1="26" x2="41" y2="26"></line><line x1="344" y1="26" x2="349" y2="26"></line>
+            <line x1="46" y1="82.5" x2="41" y2="82.5"></line><line x1="344" y1="82.5" x2="349" y2="82.5"></line>
+            <line x1="46" y1="139" x2="41" y2="139"></line><line x1="344" y1="139" x2="349" y2="139"></line>
+            <line x1="46" y1="195.5" x2="41" y2="195.5"></line><line x1="344" y1="195.5" x2="349" y2="195.5"></line>
+            <line x1="46" y1="252" x2="41" y2="252"></line><line x1="344" y1="252" x2="349" y2="252"></line>
+            <line x1="46" y1="252" x2="46" y2="257"></line><line x1="46" y1="26" x2="46" y2="21"></line>
+            <line x1="120.5" y1="252" x2="120.5" y2="257"></line><line x1="120.5" y1="26" x2="120.5" y2="21"></line>
+            <line x1="195" y1="252" x2="195" y2="257"></line><line x1="195" y1="26" x2="195" y2="21"></line>
+            <line x1="269.5" y1="252" x2="269.5" y2="257"></line><line x1="269.5" y1="26" x2="269.5" y2="21"></line>
+            <line x1="344" y1="252" x2="344" y2="257"></line><line x1="344" y1="26" x2="344" y2="21"></line>
+          </g>
+          <g class="axis-label">
+            <text x="41" y="30">8,000</text>
+            <text x="41" y="86.5">6,000</text>
+            <text x="41" y="143">4,000</text>
+            <text x="41" y="199.5">2,000</text>
+            <text x="41" y="256">0</text>
+            <text x="46" y="269">8k</text>
+            <text x="120.5" y="269">16k</text>
+            <text x="195" y="269">32k</text>
+            <text x="269.5" y="269">64k</text>
+            <text x="344" y="269">131k</text>
+          </g>
+          <line class="limit-line" x1="46" y1="32" x2="344" y2="32"></line>
+          <g class="series s-iq3">
+            <polyline class="pt-line" points="46,37.9 120.5,35 195,48.8 269.5,37.6 344,55.8"></polyline>
+            <circle cx="46" cy="37.9" r="2.8"></circle>
+            <circle cx="120.5" cy="35" r="2.8"></circle>
+            <circle cx="195" cy="48.8" r="2.8"></circle>
+            <circle cx="269.5" cy="37.6" r="2.8"></circle>
+            <circle cx="344" cy="55.8" r="2.8"></circle>
+          </g>
+          <g class="series s-iq2">
+            <polyline class="pt-line" points="46,34.7 120.5,42.8 195,34.7 269.5,32.5"></polyline>
+            <line class="unmeasured" x1="269.5" y1="32.5" x2="344" y2="32.5"></line>
+            <circle cx="46" cy="34.7" r="2.8"></circle>
+            <circle cx="120.5" cy="42.8" r="2.8"></circle>
+            <circle cx="195" cy="34.7" r="2.8"></circle>
+            <circle cx="269.5" cy="32.5" r="2.8"></circle>
+          </g>
+          <g class="fail-mark" aria-hidden="true">
+            <line x1="341" y1="37" x2="355" y2="51"></line>
+            <line x1="355" y1="37" x2="341" y2="51"></line>
+          </g>
+          <text class="fail-label" x="336" y="56" text-anchor="end">131k は値なし</text>
+          <g class="empty-note">
+            <text x="52" y="150">この下には何もない。</text>
+            <text x="52" y="170">どの構成も定格の 89–100% で動いた。</text>
+          </g>
+        </svg>
+        <ul class="legend">
+          <li class="lg-iq3"><span class="sw"></span>IQ3_S</li>
+          <li class="lg-iq2"><span class="sw"></span>IQ2_XS</li>
+          <li class="lg-fail"><span class="sw"></span>IQ2_XS の 131,072 は値なし</li>
+        </ul>
+        <p class="panel-read">
+          すべての点が朱線の直下に貼り付いています。上限まで残りわずか <b>18 MiB</b> まで迫った構成（IQ2_XS / 64k）もありました。IQ2_XS を 131k まで伸ばそうとした 2 回は値が取れませんでしたが、そのとき実測されていた VRAM は 5,294 MiB（<code>ngl</code> 36、context を作れず）と 7,678 MiB（<code>ngl</code> 32、CUDA error）で、<b>どちらもこの線の内側</b>です。
+        </p>
+      </figure>
+
+      <div class="panel-col">
+        <figure class="panel">
+          <figcaption>
+            <span class="p-no">図 3-2</span>
+            <span class="p-title">prefill 速度</span>
+            <span class="p-en">PREFILL THROUGHPUT</span>
+          </figcaption>
+          <svg viewBox="0 0 360 250" role="img" aria-labelledby="pf-t pf-d" class="plot">
+            <title id="pf-t">prefill 速度の実測値</title>
+            <desc id="pf-d">IQ3_S は 534.3 から 333.3 tok/s、IQ2_XS は 664.6 から 497.7 tok/s へ文脈長とともに低下する。</desc>
+            <rect class="frame" x="46" y="16" width="298" height="198"></rect>
+            <g class="grid">
+              <line x1="46" y1="65.5" x2="344" y2="65.5"></line>
+              <line x1="46" y1="115" x2="344" y2="115"></line>
+              <line x1="46" y1="164.5" x2="344" y2="164.5"></line>
+            </g>
+            <g class="ticks">
+              <line x1="46" y1="16" x2="41" y2="16"></line><line x1="344" y1="16" x2="349" y2="16"></line>
+              <line x1="46" y1="65.5" x2="41" y2="65.5"></line><line x1="344" y1="65.5" x2="349" y2="65.5"></line>
+              <line x1="46" y1="115" x2="41" y2="115"></line><line x1="344" y1="115" x2="349" y2="115"></line>
+              <line x1="46" y1="164.5" x2="41" y2="164.5"></line><line x1="344" y1="164.5" x2="349" y2="164.5"></line>
+              <line x1="46" y1="214" x2="41" y2="214"></line><line x1="344" y1="214" x2="349" y2="214"></line>
+              <line x1="46" y1="214" x2="46" y2="219"></line><line x1="46" y1="16" x2="46" y2="11"></line>
+              <line x1="120.5" y1="214" x2="120.5" y2="219"></line><line x1="120.5" y1="16" x2="120.5" y2="11"></line>
+              <line x1="195" y1="214" x2="195" y2="219"></line><line x1="195" y1="16" x2="195" y2="11"></line>
+              <line x1="269.5" y1="214" x2="269.5" y2="219"></line><line x1="269.5" y1="16" x2="269.5" y2="11"></line>
+              <line x1="344" y1="214" x2="344" y2="219"></line><line x1="344" y1="16" x2="344" y2="11"></line>
+            </g>
+            <g class="axis-label">
+              <text x="41" y="20">800</text>
+              <text x="41" y="69.5">600</text>
+              <text x="41" y="119">400</text>
+              <text x="41" y="168.5">200</text>
+              <text x="41" y="218">0</text>
+              <text x="46" y="231">8k</text>
+              <text x="120.5" y="231">16k</text>
+              <text x="195" y="231">32k</text>
+              <text x="269.5" y="231">64k</text>
+              <text x="344" y="231">131k</text>
+              <text class="axis-unit" x="41" y="9">tok/s</text>
+            </g>
+            <g class="series s-iq3">
+              <polyline class="pt-line" points="46,81.8 120.5,84 195,97.3 269.5,108.1 344,131.5"></polyline>
+              <circle cx="46" cy="81.8" r="3.2"></circle>
+              <circle cx="120.5" cy="84" r="3.2"></circle>
+              <circle cx="195" cy="97.3" r="3.2"></circle>
+              <circle cx="269.5" cy="108.1" r="3.2"></circle>
+              <circle cx="344" cy="131.5" r="3.2"></circle>
+            </g>
+            <g class="series s-iq2">
+              <polyline class="pt-line" points="46,49.5 120.5,62.2 195,71.1 269.5,90.8"></polyline>
+              <line class="unmeasured" x1="269.5" y1="90.8" x2="344" y2="90.8"></line>
+              <circle cx="46" cy="49.5" r="3.2"></circle>
+              <circle cx="120.5" cy="62.2" r="3.2"></circle>
+              <circle cx="195" cy="71.1" r="3.2"></circle>
+              <circle cx="269.5" cy="90.8" r="3.2"></circle>
+            </g>
+          </svg>
+        </figure>
+
+        <figure class="panel">
+          <figcaption>
+            <span class="p-no">図 3-3</span>
+            <span class="p-title">decode 速度</span>
+            <span class="p-en">DECODE THROUGHPUT</span>
+          </figcaption>
+          <svg viewBox="0 0 360 250" role="img" aria-labelledby="dc-t dc-d" class="plot">
+            <title id="dc-t">decode 速度の実測値</title>
+            <desc id="dc-d">IQ3_S は 6.50 から 1.61 tok/s、IQ2_XS は 13.51 から 4.22 tok/s へ文脈長とともに急減する。</desc>
+            <rect class="frame" x="46" y="16" width="298" height="198"></rect>
+            <g class="grid">
+              <line x1="46" y1="65.5" x2="344" y2="65.5"></line>
+              <line x1="46" y1="115" x2="344" y2="115"></line>
+              <line x1="46" y1="164.5" x2="344" y2="164.5"></line>
+            </g>
+            <g class="ticks">
+              <line x1="46" y1="16" x2="41" y2="16"></line><line x1="344" y1="16" x2="349" y2="16"></line>
+              <line x1="46" y1="65.5" x2="41" y2="65.5"></line><line x1="344" y1="65.5" x2="349" y2="65.5"></line>
+              <line x1="46" y1="115" x2="41" y2="115"></line><line x1="344" y1="115" x2="349" y2="115"></line>
+              <line x1="46" y1="164.5" x2="41" y2="164.5"></line><line x1="344" y1="164.5" x2="349" y2="164.5"></line>
+              <line x1="46" y1="214" x2="41" y2="214"></line><line x1="344" y1="214" x2="349" y2="214"></line>
+              <line x1="46" y1="214" x2="46" y2="219"></line><line x1="46" y1="16" x2="46" y2="11"></line>
+              <line x1="120.5" y1="214" x2="120.5" y2="219"></line><line x1="120.5" y1="16" x2="120.5" y2="11"></line>
+              <line x1="195" y1="214" x2="195" y2="219"></line><line x1="195" y1="16" x2="195" y2="11"></line>
+              <line x1="269.5" y1="214" x2="269.5" y2="219"></line><line x1="269.5" y1="16" x2="269.5" y2="11"></line>
+              <line x1="344" y1="214" x2="344" y2="219"></line><line x1="344" y1="16" x2="344" y2="11"></line>
+            </g>
+            <g class="axis-label">
+              <text x="41" y="20">16</text>
+              <text x="41" y="69.5">12</text>
+              <text x="41" y="119">8</text>
+              <text x="41" y="168.5">4</text>
+              <text x="41" y="218">0</text>
+              <text x="46" y="231">8k</text>
+              <text x="120.5" y="231">16k</text>
+              <text x="195" y="231">32k</text>
+              <text x="269.5" y="231">64k</text>
+              <text x="344" y="231">131k</text>
+              <text class="axis-unit" x="41" y="9">tok/s</text>
+            </g>
+            <g class="series s-iq3">
+              <polyline class="pt-line" points="46,133.6 120.5,142.5 195,162.8 269.5,176.9 344,194.1"></polyline>
+              <circle cx="46" cy="133.6" r="3.2"></circle>
+              <circle cx="120.5" cy="142.5" r="3.2"></circle>
+              <circle cx="195" cy="162.8" r="3.2"></circle>
+              <circle cx="269.5" cy="176.9" r="3.2"></circle>
+              <circle cx="344" cy="194.1" r="3.2"></circle>
+            </g>
+            <g class="series s-iq2">
+              <polyline class="pt-line" points="46,46.8 120.5,85.8 195,114.6 269.5,161.8"></polyline>
+              <line class="unmeasured" x1="269.5" y1="161.8" x2="344" y2="161.8"></line>
+              <circle cx="46" cy="46.8" r="3.2"></circle>
+              <circle cx="120.5" cy="85.8" r="3.2"></circle>
+              <circle cx="195" cy="114.6" r="3.2"></circle>
+              <circle cx="269.5" cy="161.8" r="3.2"></circle>
+            </g>
+          </svg>
+        </figure>
+      </div>
+    </div>
+
+    <ol class="fig-notes">
+      <li>縦軸はいずれも 0 起点。目盛りを省いていません。</li>
+      <li>線は実測点を結んだだけで、その区間の値ではありません。灰色の破線は、値が無いまま終わる区間を示します。</li>
+      <li>IQ2_XS の 131,072 は ngl 32 と 36 の 2 回とも文脈を確保できず終了（<code>rc=-6</code> は CUDA error / <code>rc=1</code> は context を作れず）。値が無いので点も線もありません。<b>これより低い <code>ngl</code> は試していません。</b></li>
+      <li>ピーク VRAM は prefill と decode の測定値の高い方です。</li>
+    </ol>
+  </section>
+
+  <section class="sec" id="ladder" aria-labelledby="h-ladder">
+    <h2 id="h-ladder"><span class="no">4</span>構成ラダー<span class="en">131k CONFIGURATION LADDER</span></h2>
+    <p class="lede">Qwen3.6-35B-A3B / <code>qwen36-35b-q4km-r2.gguf</code>（21.1 GB, Q4_K_M, 733 tensors）。このモデルは 40 層あります（同じヘッダの <code>qwen35moe.block_count = 40</code>）。2026-09-21 計測。重みは 4 bit のまま、KV は q8_0、flash-attn は on。130k 文脈で初回トークンが出るまでの時間を、構成を変えながら詰めていった記録です。</p>
+
+    <div class="scroll">
+      <table class="tbl tbl-ladder">
+        <caption class="vh">131k 文脈における構成ごとの実測値</caption>
+        <thead>
+          <tr>
+            <th scope="col">構成</th>
+            <th scope="col">prefill<span class="u">tok/s</span></th>
+            <th scope="col">TTFT 130k<span class="u">秒</span></th>
+            <th scope="col">decode<span class="u">tok/s</span></th>
+            <th scope="col">VRAM<span class="u">GB</span></th>
+            <th scope="col">備考</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Ollama safe（batch 512, t16）</th>
+            <td class="num">667</td><td class="num">191</td><td class="num">46–58</td><td class="num">ほぼ満杯</td>
+            <td>旧ベースライン</td>
+          </tr>
+          <tr>
+            <th scope="row">llama.cpp ngl12</th>
+            <td class="num">約 55</td><td class="num empty">—</td><td class="num">24–25</td><td class="num">7.6</td>
+            <td>attention が CPU に落ちて遅い</td>
+          </tr>
+          <tr>
+            <th scope="row">llama.cpp cpu-moe 全部（b512）</th>
+            <td class="num">463</td><td class="num empty">—</td><td class="num">40</td><td class="num">4.2</td>
+            <td>MoE をすべて CPU へ</td>
+          </tr>
+          <tr>
+            <th scope="row">n-cpu-moe 36（b2048 / ub512）</th>
+            <td class="num">470</td><td class="num">277</td><td class="num empty">—</td><td class="num">6.4</td>
+            <td>batch を上げても効かず</td>
+          </tr>
+          <tr>
+            <th scope="row">n-cpu-moe 34（b2048 / ub512）</th>
+            <td class="num">523<span class="u">@32k</span></td><td class="num empty">—</td><td class="num empty">—</td><td class="num">7.3</td>
+            <td>130k では余裕なし</td>
+          </tr>
+          <tr>
+            <th scope="row">n-cpu-moe 36（b4096 / ub1024）</th>
+            <td class="num">752</td><td class="num">173</td><td class="num">31</td><td class="num">6.6</td>
+            <td>batch を倍に</td>
+          </tr>
+          <tr class="adopted">
+            <th scope="row">n-cpu-moe 36（b8192 / ub2048）<span class="tag">採用</span></th>
+            <td class="num">1,075</td><td class="num">121</td><td class="num">31–43</td><td class="num">7.0</td>
+            <td>これが最良</td>
+          </tr>
+          <tr>
+            <th scope="row">ub4096</th>
+            <td class="num empty">—</td><td class="num empty">—</td><td class="num empty">—</td><td class="num fail">OOM で abort</td>
+            <td>上限を確定</td>
+          </tr>
+          <tr>
+            <th scope="row">threads 24</th>
+            <td class="num">差なし</td><td class="num empty">—</td><td class="num empty">—</td><td class="num empty">—</td>
+            <td>16 のまま</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="tbl-foot">
+      <b>結論</b> — 初回トークンまで <b>191 秒 → 121 秒</b>（1.6 倍）。decode は同等（約 30–45 tok/s）を維持。決め手は <code>n-cpu-moe</code> で MoE 層を CPU に残したまま、batch と ubatch を 8192 / 2048 まで上げたことでした。空欄（—）は元の記録でも未計測です。
+    </p>
+  </section>
+
+  <section class="sec" id="sweep" aria-labelledby="h-sweep">
+    <h2 id="h-sweep"><span class="no">5</span>量子化スイープ<span class="en">QUANTIZATION SWEEP DATA</span></h2>
+    <p class="lede">Qwen3.8-27B を 2 つの量子化で、文脈長を 8,192 から 131,072 まで振った実測値（2026-09-28）。このモデルは 64 層あります（量子化ファイルのヘッダの <code>qwen35.block_count = 64</code>）。ngl は「GPU に載せた層数」なので、分母はどちらも 64 です。IQ3_S は 8,192 で 32 層、131,072 で 20 層。IQ2_XS は 8,192 で 48 層、65,536 で 40 層、131,072 は <code>ngl</code> 36 と 32 を試してどちらも確保できず、これより低い <code>ngl</code> は試していません。量子化が違えば載る層数も違います。同じ量子化の中では、VRAM が足りなくなるたびに自動で下げています。この表の数値が、上の 3 つの図の元データです。</p>
+
+    <div class="scroll">
+      <table class="tbl tbl-sweep" id="sweep-table">
+        <caption class="vh">量子化ごと・文脈長ごとの実測値</caption>
+        <thead>
+          <tr>
+            <th scope="col" rowspan="2">量子化</th>
+            <th scope="col" rowspan="2">文脈長<span class="u">tokens</span></th>
+            <th scope="colgroup" colspan="3">prefill を測ったとき</th>
+            <th scope="colgroup" colspan="3">decode を測ったとき</th>
+            <th scope="col" rowspan="2">ピーク<span class="u">MiB</span></th>
+          </tr>
+          <tr>
+            <th scope="col">速度<span class="u">tok/s</span></th>
+            <th scope="col">ngl</th>
+            <th scope="col">VRAM<span class="u">MiB</span></th>
+            <th scope="col">速度<span class="u">tok/s</span></th>
+            <th scope="col">ngl</th>
+            <th scope="col">VRAM<span class="u">MiB</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-quant="IQ3_S" data-ctx="8192" data-prefill="534.3" data-pngl="32" data-pvram="7574" data-decode="6.50" data-dngl="32" data-dvram="7578" data-peak="7578">
+            <th scope="row" rowspan="5" class="rowhead">IQ3_S</th>
+            <td class="num">8,192</td><td class="num">534.3</td><td class="num">32</td><td class="num">7,574</td>
+            <td class="num">6.50</td><td class="num">32</td><td class="num">7,578</td><td class="num peak">7,578</td>
+          </tr>
+          <tr data-quant="IQ3_S" data-ctx="16384" data-prefill="525.1" data-pngl="32" data-pvram="7678" data-decode="5.78" data-dngl="32" data-dvram="7682" data-peak="7682">
+            <td class="num">16,384</td><td class="num">525.1</td><td class="num">32</td><td class="num">7,678</td>
+            <td class="num">5.78</td><td class="num">32</td><td class="num">7,682</td><td class="num peak">7,682</td>
+          </tr>
+          <tr data-quant="IQ3_S" data-ctx="32768" data-prefill="471.7" data-pngl="28" data-pvram="7188" data-decode="4.14" data-dngl="28" data-dvram="7192" data-peak="7192">
+            <td class="num">32,768</td><td class="num">471.7</td><td class="num">28</td><td class="num">7,188</td>
+            <td class="num">4.14</td><td class="num">28</td><td class="num">7,192</td><td class="num peak">7,192</td>
+          </tr>
+          <tr data-quant="IQ3_S" data-ctx="65536" data-prefill="427.7" data-pngl="28" data-pvram="7590" data-decode="3.00" data-dngl="28" data-dvram="7590" data-peak="7590">
+            <td class="num">65,536</td><td class="num">427.7</td><td class="num">28</td><td class="num">7,590</td>
+            <td class="num">3.00</td><td class="num">28</td><td class="num">7,590</td><td class="num peak">7,590</td>
+          </tr>
+          <tr data-quant="IQ3_S" data-ctx="131072" data-prefill="333.3" data-pngl="20" data-pvram="6938" data-decode="1.61" data-dngl="20" data-dvram="6944" data-peak="6944">
+            <td class="num">131,072</td><td class="num">333.3</td><td class="num">20</td><td class="num">6,938</td>
+            <td class="num">1.61</td><td class="num">20</td><td class="num">6,944</td><td class="num peak">6,944</td>
+          </tr>
+          <tr data-quant="IQ2_XS" data-ctx="8192" data-prefill="664.6" data-pngl="48" data-pvram="7684" data-decode="13.51" data-dngl="48" data-dvram="7692" data-peak="7692">
+            <th scope="row" rowspan="5" class="rowhead">IQ2_XS</th>
+            <td class="num">8,192</td><td class="num">664.6</td><td class="num">48</td><td class="num">7,684</td>
+            <td class="num">13.51</td><td class="num">48</td><td class="num">7,692</td><td class="num peak">7,692</td>
+          </tr>
+          <tr data-quant="IQ2_XS" data-ctx="16384" data-prefill="613.2" data-pngl="44" data-pvram="7398" data-decode="10.36" data-dngl="44" data-dvram="7406" data-peak="7406">
+            <td class="num">16,384</td><td class="num">613.2</td><td class="num">44</td><td class="num">7,398</td>
+            <td class="num">10.36</td><td class="num">44</td><td class="num">7,406</td><td class="num peak">7,406</td>
+          </tr>
+          <tr data-quant="IQ2_XS" data-ctx="32768" data-prefill="577.3" data-pngl="44" data-pvram="7684" data-decode="8.03" data-dngl="44" data-dvram="7692" data-peak="7692">
+            <td class="num">32,768</td><td class="num">577.3</td><td class="num">44</td><td class="num">7,684</td>
+            <td class="num">8.03</td><td class="num">44</td><td class="num">7,692</td><td class="num peak">7,692</td>
+          </tr>
+          <tr data-quant="IQ2_XS" data-ctx="65536" data-prefill="497.7" data-pngl="40" data-pvram="7772" data-decode="4.22" data-dngl="36" data-dvram="7266" data-peak="7772">
+            <td class="num">65,536</td><td class="num">497.7</td><td class="num">40</td><td class="num">7,772</td>
+            <td class="num">4.22</td><td class="num">36</td><td class="num">7,266</td><td class="num peak">7,772</td>
+          </tr>
+          <tr class="fail">
+            <td class="num">131,072</td><td class="num empty" colspan="7">文脈を確保できず終了（ngl 36 は context を作れず / ngl 32 は CUDA error。これより下は未試行）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="tbl-foot">
+      <b>読み取れること</b> — 軽い量子化（IQ2_XS）は速いが、131,072 では <code>ngl</code> を 36、32 と下げても文脈を確保できず、掃引はそこで止まりました。重い量子化（IQ3_S）は遅い代わりに、131,072 でも 6,944 MiB に収まっています。<b>131,072 を実際に測れたのは IQ3_S だけ</b>で、この 2 つを同時に取った測定はありません。IQ2_XS の 131,072 はこれより低い <code>ngl</code> を試していないので、動くかどうかは分かっていません。どちらを選ぶかは、その日そのモデルで何をしたいかで決まります。
+    </p>
+  </section>
+
+  <section class="sec" id="application" aria-labelledby="h-application">
+    <h2 id="h-application"><span class="no">6</span>応用情報<span class="en">APPLICATION INFORMATION</span></h2>
+    <p class="lede"><b>禅ドライブ</b> — この機材で作って、この機材で描いた 3D ドライブ体験。three.js と esbuild だけを使い、スコアも制限時間も敵もありません。20〜60 km/h の禅巡航に振り切ってあり、霧と光が呼吸に合わせて脈打ちます。下の 4 枚は実際にレンダリングした画面で、時刻ごとの動作条件です。</p>
+
+    <div class="plates">
+      <figure>
+        <picture>
+          <source srcset="assets/img/chase-morning.avif" type="image/avif">
+          <source srcset="assets/img/chase-morning.webp" type="image/webp">
+          <img src="assets/img/chase-morning.webp" width="880" height="496" loading="lazy" decoding="async" alt="朝霧の峠道。前方に小さな車、両側に杉のシルエット。画面左上に「朝」、左下に 23 KM/H と 1速。">
+        </picture>
+        <figcaption><span class="p-no">図 6-1</span>朝 — 霧の峠。自動走行、音あり、カメラ追走。</figcaption>
+      </figure>
+      <figure>
+        <picture>
+          <source srcset="assets/img/chase-mist-torii.avif" type="image/avif">
+          <source srcset="assets/img/chase-mist-torii.webp" type="image/webp">
+          <img src="assets/img/chase-mist-torii.webp" width="880" height="496" loading="lazy" decoding="async" alt="昼の白い霧の道。右に鳥居と石灯籠、左に杉。画面左上に「昼」。">
+        </picture>
+        <figcaption><span class="p-no">図 6-2</span>昼 — 鳥居の道。霧で遠景が白く飛んでいる。</figcaption>
+      </figure>
+      <figure>
+        <picture>
+          <source srcset="assets/img/chase-sunset.avif" type="image/avif">
+          <source srcset="assets/img/chase-sunset.webp" type="image/webp">
+          <img src="assets/img/chase-sunset.webp" width="880" height="496" loading="lazy" decoding="async" alt="夕暮れの道。空が橙から紫へ変わり、路面に長い影が落ちている。">
+        </picture>
+        <figcaption><span class="p-no">図 6-3</span>夕 — 日没。光が最も寝る時間帯。</figcaption>
+      </figure>
+      <figure>
+        <picture>
+          <source srcset="assets/img/chase-night.avif" type="image/avif">
+          <source srcset="assets/img/chase-night.webp" type="image/webp">
+          <img src="assets/img/chase-night.webp" width="880" height="496" loading="lazy" decoding="async" alt="夜の道。ヘッドライトの円錐だけが路面を照らし、空には蛍のような点が浮かぶ。">
+        </picture>
+        <figcaption><span class="p-no">図 6-4</span>夜 — 灯火のみ。光源はヘッドライトだけ。</figcaption>
+      </figure>
+    </div>
+
+    <table class="tbl tbl-app">
+      <caption class="vh">禅ドライブの構成</caption>
+      <tbody>
+        <tr><th scope="row">依存</th><td>three.js（描画）と esbuild（ビルド）のみ。実行時にネットワークを使わない。</td></tr>
+        <tr><th scope="row">操作</th><td>速度感応のステア、AT、エンジンブレーキ、横滑り。20〜60 km/h の巡航に調整。</td></tr>
+        <tr><th scope="row">世界</th><td>鳥居、石灯籠、竹林、棚田、湖、鹿威し。霧と光が呼吸に合わせて脈打つ。</td></tr>
+        <tr><th scope="row">音</th><td>エンジン音、砂利の音、生成されるペンタトニック。</td></tr>
+        <tr><th scope="row">スコア</th><td>無い。制限時間も敵も無い。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="sec" id="conditions" aria-labelledby="h-conditions">
+    <h2 id="h-conditions"><span class="no">7</span>計測条件<span class="en">MEASUREMENT CONDITIONS</span></h2>
+
+    <div class="two-col">
+      <table class="tbl">
+        <caption class="vh">計測に使った機材</caption>
+        <thead><tr><th scope="col">機材</th><th scope="col">実測</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">CPU</th><td>Intel Core i7-14700F</td></tr>
+          <tr><th scope="row">コア / スレッド</th><td class="num">20 / 28</td></tr>
+          <tr><th scope="row">RAM</th><td class="num">31 GiB</td></tr>
+          <tr><th scope="row">GPU</th><td>NVIDIA GeForce RTX 5060 Ti</td></tr>
+          <tr><th scope="row">VRAM（報告値）</th><td class="num">7,790 MiB</td></tr>
+          <tr><th scope="row">compute capability</th><td class="num">12.0</td></tr>
+          <tr><th scope="row">OS</th><td>Arch Linux（kernel 7.2.9-arch1-1）</td></tr>
+          <tr><th scope="row">Ollama</th><td class="num">0.34.2</td></tr>
+        </tbody>
+      </table>
+
+      <div class="conds">
+        <h3 class="sub">実行時設定<span class="en">RUNTIME FLAGS</span></h3>
+        <ul class="mono-list">
+          <li><code>-ctk q8_0 -ctv q4_0</code></li>
+          <li><code>-fa 1</code>（flash-attn）</li>
+          <li><code>-t 16</code>（threads。24 にしても差は出なかった）</li>
+          <li><code>--n-cpu-moe 36</code></li>
+          <li><code>-b 8192 -ub 2048</code></li>
+        </ul>
+        <h3 class="sub">版<span class="en">REVISION OF TOOLING</span></h3>
+        <ul class="mono-list">
+          <li>GGUF <code>qwen36-35b-q4km-r2.gguf</code>（21.1 GB, Q4_K_M, 733 tensors）</li>
+          <li>llama.cpp commit <code>ce8caa6</code> ＋ qwen35moe の層別ヘッド修正を当てたもの</li>
+        </ul>
+        <h3 class="sub">前置きキャッシュ<span class="en">PROMPT CACHING</span></h3>
+        <ul class="mono-list">
+          <li>同一 prefix の再投入で <b>46 倍</b>（8k で 2.8 秒 → 0.06 秒）</li>
+          <li>Ollama 側の cross-request prefix caching は 17k で 19 秒 → 1.1 秒</li>
+          <li>131k の常用 prefix がある使い方なら、初回トークンは秒の桁になります</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="notes" aria-labelledby="h-notes">
+    <h2 id="h-notes"><span class="no">8</span>注記<span class="en">NOTES</span></h2>
+    <ol class="notes">
+      <li>本書の数値はすべて、記載した 1 台で実際に測定したものです。他の環境での値を保証しません。</li>
+      <li>空欄（—）は元の記録でも未計測です。推定値で埋めていません。</li>
+      <li>図の実線は実測点を結んでいるだけで、その区間の測定値ではありません。灰色の破線は、測定値が無いまま終わる区間です。</li>
+      <li>「VRAM 8 GB」は公称値です。実機が報告する値は <b>7,790 MiB</b> で、こちらを定格として扱っています。</li>
+      <li>Ollama のベースライン行の VRAM は「ほぼ満杯」としか記録がなく、数値がありません。</li>
+      <li>量子化スイープは Qwen3.8-27B、構成ラダーは Qwen3.6-35B-A3B です。<b>別のモデルなので、両者の数値を直接比べることはできません。</b></li>
+      <li>131,072 トークンの文脈は確保できましたが、その長さで品質が保たれるかは測っていません。thinking が正常に回ることは確認しています。</li>
+    </ol>
+  </section>
+
+  <section class="sec" id="revision" aria-labelledby="h-revision">
+    <h2 id="h-revision"><span class="no">9</span>改訂履歴<span class="en">REVISION HISTORY</span></h2>
+    <table class="tbl tbl-rev">
+      <caption class="vh">改訂の履歴</caption>
+      <thead><tr><th scope="col">改訂</th><th scope="col">日付</th><th scope="col">内容</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">A</th><td class="num">2026-09-21</td><td>131k 文脈の最適化を完了。TTFT 191 秒 → 121 秒。</td></tr>
+        <tr><th scope="row">B</th><td class="num">2026-09-28</td><td>量子化スイープ。IQ2_XS / IQ3_S を 8,192〜131,072 で計測。IQ2_XS の 131,072 は 2 構成とも確保できず、未計測のまま。</td></tr>
+        <tr><th scope="row">C</th><td class="num">2026-10-06</td><td>禅ドライブをレンダリング。時刻ごとの図を採取。</td></tr>
+        <tr><th scope="row">1</th><td class="num">2026-10-12</td><td>本書を発行。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="sec" id="ordering" aria-labelledby="h-ordering">
+    <h2 id="h-ordering"><span class="no">10</span>注文情報<span class="en">ORDERING INFORMATION</span></h2>
+    <p class="lede">測っている本人に直接届きます。質問、再現の相談、同じことをやってみた報告はどれも歓迎します。</p>
+    <ul class="contact">
+      <li>
+        <span class="c-label">GitHub</span>
+        <a href="https://github.com/cwd514" rel="me noopener" target="_blank">github.com/cwd514<span class="ext" aria-hidden="true">↗</span><span class="vh">（新しいタブで開きます）</span></a>
+      </li>
+      <li>
+        <span class="c-label">X</span>
+        <a href="https://x.com/sui_egamer" rel="me noopener" target="_blank">x.com/sui_egamer<span class="ext" aria-hidden="true">↗</span><span class="vh">（新しいタブで開きます）</span></a>
+      </li>
+      <li>
+        <span class="c-label">Discord</span>
+        <span class="c-disc">su_ra_i_meu</span>
+      </li>
+    </ul>
+    <p class="contact-note">メールアドレスは公開していません。GitHub の Issue か X の DM が確実です。</p>
+  </section>
+
+</main>
+
+<footer class="disclaimer">
+  <p><b>免責</b> — 本書は個人が 1 台の機材で行った測定の記録です。数値はその環境とその版に固有で、他の構成での性能を示すものではありません。ここに書かれていない受賞・導入事例・利用者数・推薦は存在しないため、書いていません。</p>
+  <p class="fin">すい — 学生・地元のLLM研究中 · 2026-10-12 · すべての数値は実測</p>
+</footer>
+
+<script src="js/main.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+{
+  "prompt": "tools/og.html を原稿とし、これを headless Chromium で 1200x630 に描画したものが og.png。\n写真も生成画像も使っていない。紙・インク・朱・青の 4 役と、本編と同じ書体（Hack / DejaVu Sans Condensed）だけで組んである。\n加筆・合成・色調整はしていない。\n",
+  "createdAt": "2026-10-12T01:00:35.058Z"
+}

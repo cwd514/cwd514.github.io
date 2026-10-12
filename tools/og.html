@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>OG card source — 1200×630</title>
+<style>
+  /* 本編と同じ紙とインク、同じ書体。ここは書き出し用の原稿なので、外部には何も取りに行かない。 */
+  @font-face {
+    font-family: "Hack"; font-style: normal; font-weight: 400; font-display: block;
+    src: url("../assets/fonts/hack-400.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "Hack"; font-style: normal; font-weight: 700; font-display: block;
+    src: url("../assets/fonts/hack-700.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "DejaVu Sans Condensed"; font-style: normal; font-weight: 400; font-display: block;
+    src: url("../assets/fonts/label-400.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "DejaVu Sans Condensed"; font-style: normal; font-weight: 700; font-display: block;
+    src: url("../assets/fonts/label-700.woff2") format("woff2");
+  }
+  :root {
+    --paper: #eef0f2;
+    --paper-2: #e4e8ea;
+    --ink: #10161c;
+    --ink-soft: #4a575f;
+    --rule: #9fb0bb;
+    --limit: #c8102e;
+    --safe: #1d5b7a;
+    --prose: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans CJK JP", "Noto Sans JP", Meiryo, sans-serif;
+    --mono: "Hack", ui-monospace, "DejaVu Sans Mono", "Liberation Mono", monospace;
+    --label: "DejaVu Sans Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--prose);
+    -webkit-font-smoothing: antialiased;
+    display: flex; flex-direction: column;
+  }
+
+  .head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 26px 44px 16px;
+    border-bottom: 4px solid var(--ink);
+  }
+  .doc-no { font-family: var(--mono); font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
+  .meta { font-family: var(--mono); font-size: 14px; color: var(--ink-soft); letter-spacing: 0.04em; }
+  .meta b { color: var(--ink); font-weight: 700; }
+
+  .body { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 372px; gap: 52px; padding: 38px 44px 26px; align-items: stretch; }
+  .col { display: flex; flex-direction: column; }
+
+  h1 { font-size: 62px; line-height: 1.08; letter-spacing: -0.02em; font-weight: 700; }
+  h1 .en {
+    display: block; font-family: var(--label); font-weight: 400;
+    font-size: 17px; letter-spacing: 0.2em; color: var(--ink-soft); margin-top: 12px;
+  }
+  .lede { margin-top: 26px; font-size: 24px; line-height: 1.66; max-width: 21em; }
+  .lede b { font-family: var(--mono); font-size: 1.06em; color: var(--limit); }
+  .lede i { font-style: normal; font-family: var(--mono); font-size: 0.96em; color: var(--safe); }
+
+  .byline {
+    margin-top: auto; padding-top: 14px; border-top: 1px solid var(--rule);
+    font-size: 17px; color: var(--ink-soft); display: flex; gap: 14px; align-items: baseline;
+  }
+  .byline b { color: var(--ink); font-weight: 700; }
+
+  .rating {
+    border: 3px solid var(--limit); border-top-width: 11px; padding: 16px 22px 18px;
+    display: flex; flex-direction: column;
+  }
+  .rating .lbl { font-family: var(--label); font-size: 13px; font-weight: 700; letter-spacing: 0.16em; color: var(--limit); }
+  .rating .fig {
+    font-family: var(--mono); font-weight: 700; font-size: 150px; line-height: 0.82;
+    letter-spacing: -0.04em; color: var(--limit); white-space: nowrap;
+    margin: 16px 0 4px calc(-22px - 0.3em);
+  }
+  .rating .fig small { font-size: 0.26em; letter-spacing: 0.01em; margin-left: 0.06em; }
+  .rating .exact {
+    margin-top: auto; padding-top: 12px; border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 14px; color: var(--ink-soft);
+  }
+  .rating .exact b { color: var(--ink); font-size: 1.14em; }
+
+  .foot {
+    padding: 14px 44px 22px; border-top: 4px solid var(--ink);
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: var(--mono); font-size: 14px; color: var(--ink-soft); letter-spacing: 0.05em;
+  }
+  .foot b { color: var(--limit); font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <span class="doc-no">SUI-LOCAL-001</span>
+    <span class="meta">改訂 <b>1</b> ／ 2026-10-12</span>
+  </div>
+
+  <div class="body">
+    <div class="col">
+      <h1>ローカル推論 実測記録<span class="en">MEASUREMENT RECORD</span></h1>
+      <p class="lede">GPU <b>8 GB</b> しかない1台で、<i>131,072</i> トークンの文脈を動かす。そのために何を変え、どの数字がどう動いたかの記録です。</p>
+      <p class="byline"><b>すい</b> 学生・地元のLLM研究中</p>
+    </div>
+
+    <div class="rating">
+      <div class="lbl">VRAM 定格</div>
+      <div class="fig">8<small>GB</small></div>
+      <div class="exact">実機の報告値 <b>7,790 MiB</b></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>prefill <b>1,075 tok/s</b> ／ decode 31–43 tok/s</span>
+    <span>実測のみ。補間なし。</span>
+  </div>
+</body>
+</html>

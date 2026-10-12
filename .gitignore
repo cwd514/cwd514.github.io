@@ -1,20 +1,7 @@
-# build output
+# 公開物は CI が tools/stage.sh で組み立てる。手元の生成物は持ち込まない。
 dist/
-# generated types
-.astro/
-
-# dependencies
-node_modules/
-
-# logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# environment
-.env
-.env.production
-
-# macOS
-.DS_Store
+# 指示契約・ロール・判断の記録。公開しない。
+.impeccable/
+# 「出さない」一覧を含む内部の製品文書。公開しない。
+PRODUCT.md
+__pycache__/

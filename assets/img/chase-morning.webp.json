@@ -1,0 +1,4 @@
+{
+  "prompt": "禅ドライブ（~/Documents/drive）の実レンダリングを原板とする。three.js のシーンを 1280x720 の PNG で書き出したもの。\n本作では 880px 幅へ lanczos で縮小し、libwebp（-q:v 80）で WebP、avifenc（-q 62）で AVIF を生成した。\n加筆・合成・色調整・被写体の追加はしていない。画面内の HUD は元の描画のまま残している。\n",
+  "createdAt": "2026-10-12T00:39:31.170Z"
+}
